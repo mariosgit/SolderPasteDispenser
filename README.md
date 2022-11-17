@@ -6,6 +6,8 @@ Repurposing a 3D Printer to dispense stuff from syringe.
 
 Ultraexperimental - It loads a Gerber file and dumps all coords.
 
+Try me here https://mariosgit.github.io/SolderPasteDispenser/
+
 ## Start it
 
 Clone the repo, then...
