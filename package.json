@@ -4,7 +4,7 @@
   "description": "",
   "main": "docs/index.js",
   "scripts": {
-    "start": "npx parcel --dist-dir docs ./src/index.html"
+    "start": "npx parcel --dist-dir docs --public-url ./ ./src/index.html"
   },
   "author": "",
   "license": "ISC",
