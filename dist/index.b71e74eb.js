@@ -142,13 +142,13 @@
       this[globalName] = mainExports;
     }
   }
-})({"1BH61":[function(require,module,exports) {
+})({"iJYvl":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
-var HMR_PORT = 1234;
+var HMR_PORT = null;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "d6ea1d42532a7575";
-module.bundle.HMR_BUNDLE_ID = "dfad51b14bf444f7";
+module.bundle.HMR_BUNDLE_ID = "5c1b77e3b71e74eb";
 "use strict";
 /* global HMR_HOST, HMR_PORT, HMR_ENV_HASH, HMR_SECURE, chrome, browser, globalThis, __parcel__import__, __parcel__importScripts__, ServiceWorkerGlobalScope */ /*::
 import type {
@@ -532,16 +532,72 @@ function hmrAcceptRun(bundle, id) {
 }
 
 },{}],"h7u1C":[function(require,module,exports) {
-console.log("moinsen");
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "PadStyle", ()=>PadStyle);
+parcelHelpers.export(exports, "Pad", ()=>Pad);
+parcelHelpers.export(exports, "PCB", ()=>PCB);
+var _canvasCoords = require("canvas-coords");
+const body = document.getElementsByTagName("body")[0];
 const uploadFileEle = document.getElementById("fileInput");
 const uploadButton = document.getElementById("uploadButton");
 const padsField = document.getElementById("padsField");
 const coordsField = document.getElementById("coordsField");
-const dropZone = document.getElementById("dropZone");
 const canvas = document.getElementById("canvas");
-const context = canvas?.getContext("2d");
+let ctx = null;
+let mouse, grid;
+let pcb;
+class PadStyle {
+    constructor(w, h){
+        this.width = w;
+        this.height = h;
+    }
+}
+class Pad {
+    constructor(style, x, y){
+        this.posX = x;
+        this.posY = y;
+        this.style = style;
+    }
+}
+class PCB {
+    zoom = 6.0;
+    constructor(ctx, canvas){
+        this.ctx = ctx;
+        this.canvas = canvas;
+        this.mapStyles = new Map();
+        this.mapPads = new Map();
+    }
+    draw() {
+        // theoretisch so...
+        // this.ctx.fillStyle = 'orangered';
+        this.ctx.fillStyle = "antiquewhite";
+        this.ctx.beginPath();
+        for (let padstyle of this.mapPads.keys()){
+            const sty = this.mapStyles.get(padstyle);
+            const padset = this.mapPads.get(padstyle);
+            if (sty && padset) {
+                const sw = sty.width * this.zoom;
+                const sh = sty.height * this.zoom;
+                for (let pad of padset.values())this.ctx.fillRect(pad.posX * this.zoom - sw / 2.0, pad.posY * this.zoom - sh / 2.0, sw, sh);
+            }
+        }
+        this.ctx.fill();
+    }
+    addPadStyle(name, w, h) {
+        this.mapStyles.set(name, new PadStyle(w, h));
+    }
+    addPad(style, x, y) {
+        if (!this.mapPads.has(style)) this.mapPads.set(style, new Set());
+        let padset = this.mapPads.get(style);
+        if (padset) padset.add(new Pad(style, x, y));
+    }
+}
 function init() {
-    if (uploadFileEle && uploadButton && padsField && coordsField && dropZone) {
+    console.log("moinsen");
+    if (uploadFileEle && uploadButton && padsField && coordsField && body && canvas) {
+        ctx = canvas.getContext("2d");
+        pcb = new PCB(ctx, canvas);
         uploadButton.onclick = ()=>{
             // check if user had selected a file
             if (uploadFileEle.files && uploadFileEle.files.length > 0) {
@@ -554,7 +610,7 @@ function init() {
                 return;
             }
         };
-        dropZone.ondrop = (ev)=>{
+        body.ondrop = (ev)=>{
             ev.preventDefault();
             console.log(ev);
             if (ev.dataTransfer.items) // Use DataTransferItemList interface to access the file(s)
@@ -580,15 +636,30 @@ function init() {
                 }
             });
         };
-        dropZone.ondragover = (ev)=>{
+        body.ondragover = (ev)=>{
             console.log("File(s) in drop zone");
             // Prevent default behavior (Prevent file from being opened)
             ev.preventDefault();
         };
+        canvas.width = innerWidth;
+        canvas.height = innerWidth;
+        mouse = new (0, _canvasCoords.Mouse)(ctx, canvas);
+        mouse.track();
+        grid = new (0, _canvasCoords.Grid)();
+        window.requestAnimationFrame(update);
     } else console.error("missing html elements !");
 }
+function update() {
+    if (canvas && ctx) {
+        window.requestAnimationFrame(update);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        grid.draw(ctx, canvas);
+        mouse.draw();
+        pcb.draw();
+    }
+}
 function processGerberFile(file) {
-    file.arrayBuffer().then((buf)=>{
+    if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx) file.arrayBuffer().then((buf)=>{
         arrayBufferToString(buf, "UTF-8", (text)=>{
             console.log(text);
             // translate line ends...
@@ -597,14 +668,6 @@ function processGerberFile(file) {
             let floatFracts = 1;
             let floatDezis = 1;
             let lastPad = "";
-            context.beginPath();
-            context.strokeStyle = "red";
-            context.fillStyle = "blue";
-            context.lineWidth = 5;
-            context.rect(200, 35, 50, 50);
-            context.fill();
-            context.stroke();
-            context.fillStyle = "white";
             for (let line of lines){
                 // line = line.replace(/\n/g,'<br>');
                 // Zahlenformat info line "%FSLAX34Y34*%"
@@ -622,7 +685,10 @@ function processGerberFile(file) {
                 // check for pad definitions
                 const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z])[,]([0-9.]+)[X]([0-9.]+)/); ///);
                 // console.log(matchPad);
-                if (matchPad) padsField.innerHTML += `${matchPad[2]} ${matchPad[4]} ${matchPad[5]}<br>`;
+                if (matchPad) {
+                    padsField.innerHTML += `${matchPad[2]} ${matchPad[4]} ${matchPad[5]}<br>`;
+                    pcb.addPadStyle(matchPad[2], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
+                }
                 // a pad line: "X379984Y963930D03*"
                 const matchPadCoord = line.match(/^X([0-9]+)Y([0-9]+)D([0-9]+)[*]/); ///);
                 const matchPadCoordInit = line.match(/^(D[0-9]+)[*]/); ///);
@@ -644,9 +710,7 @@ function processGerberFile(file) {
                     fx = parseFloat(sx);
                     fy = parseFloat(sy);
                     coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
-                    context.beginPath();
-                    context.fillRect(fx, fy, 3, 3);
-                    context.fill();
+                    pcb.addPad(lastPad, fx, fy);
                 }
             }
         });
@@ -678,7 +742,161 @@ function stringToArrayBuffer(string, encoding, callback) {
     reader.readAsArrayBuffer(blob);
 }
 document.addEventListener("DOMContentLoaded", init);
+window.addEventListener("resize", (val)=>{
+    console.log(`resize: ${val}`);
+    if (canvas) {
+        canvas.width = innerWidth;
+        canvas.height = innerWidth;
+        mouse.draw();
+        grid.draw(ctx, canvas);
+    }
+});
 
-},{}]},["1BH61","h7u1C"], "h7u1C", "parcelRequire25fc")
+},{"canvas-coords":"7Nmq3","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7Nmq3":[function(require,module,exports) {
+(function() {
+    var a = {};
+    function g(t, e) {
+        if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
+    }
+    function c(t, e) {
+        for(var o = 0; o < e.length; o++){
+            var s = e[o];
+            s.enumerable = s.enumerable || !1, s.configurable = !0, "value" in s && (s.writable = !0), Object.defineProperty(t, s.key, s);
+        }
+    }
+    function h(t, e, o) {
+        return e && c(t.prototype, e), o && c(t, o), t;
+    }
+    var i = function() {
+        function t(e, o) {
+            var s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "gray", i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "16px Monospace", r = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : 0, n = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : 0;
+            g(this, t), this.x = r, this.y = n, this.ctx = e, this.canvas = o, this.color = s, this.font = i, this.setPos = this.setPos.bind(this);
+        }
+        return h(t, [
+            {
+                key: "track",
+                value: function() {
+                    var t = !(arguments.length > 0 && void 0 !== arguments[0]) || arguments[0], e = this.canvas;
+                    return t ? e.addEventListener("mousemove", this.setPos) : e.removeEventListener("mousemove", this.setPos), this;
+                }
+            },
+            {
+                key: "setPos",
+                value: function(t) {
+                    var e = this.canvas.getBoundingClientRect();
+                    return this.x = Math.floor(t.clientX - e.left), this.y = Math.floor(t.clientY - e.top), this;
+                }
+            },
+            {
+                key: "draw",
+                value: function() {
+                    var t = this.x, e = this.y, o = this.canvas, s = this.ctx, i = this.font, r = this.color, n = "X: ".concat(t, ", Y: ").concat(e);
+                    s.save(), s.fillStyle = r, s.font = i;
+                    var a = t < o.width / 2 ? 20 : -s.measureText(n).width - 20, v = e < o.height / 2 ? 25 : -18;
+                    return s.fillText(n, this.x + a, this.y + v), s.restore(), this;
+                }
+            }
+        ]), t;
+    }();
+    function d(t, e) {
+        if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
+    }
+    function f(t, e) {
+        for(var i = 0; i < e.length; i++){
+            var s = e[i];
+            s.enumerable = s.enumerable || !1, s.configurable = !0, "value" in s && (s.writable = !0), Object.defineProperty(t, s.key, s);
+        }
+    }
+    function e(t, e, i) {
+        return e && f(t.prototype, e), i && f(t, i), t;
+    }
+    var b = function() {
+        function t(e, i, s, r, l, n) {
+            d(this, t), this.color = e, this.lineWidth = i, this.startX = s, this.startY = r, this.endX = l, this.endY = n;
+        }
+        return e(t, [
+            {
+                key: "draw",
+                value: function(t) {
+                    var e = this.color, i = this.lineWidth, s = this.startX, r = this.startY, l = this.endX, n = this.endY;
+                    t.save(), t.beginPath(), t.strokeStyle = e, t.lineWidth = i, t.moveTo(s, r), t.lineTo(l, n), t.stroke(), t.restore();
+                }
+            }
+        ]), t;
+    }(), j = function() {
+        function t() {
+            var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "gray", i = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : .3, s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 10, r = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : 5, l = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : "DarkGray", n = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : .5, o = arguments.length > 6 && void 0 !== arguments[6] ? arguments[6] : "16px Monospace";
+            d(this, t), this.color = e, this.lineWidth = i, this.step = s, this.boldNth = r, this.boldColor = l, this.boldWidth = n, this.font = o, this.lines = null;
+        }
+        return e(t, [
+            {
+                key: "createLines",
+                value: function(t) {
+                    for(var e = this.color, i = this.lineWidth, s = this.step, r = this.boldNth, l = this.boldColor, n = this.boldWidth, o = [], a = r * s, h = 0; h < t.width; h += s){
+                        var v = h % a == 0;
+                        o.push(v ? new b(l, n, h, 0, h, t.height) : new b(e, i, h, 0, h, t.height));
+                    }
+                    for(var $ = 0; $ < t.height; $ += s){
+                        var d = $ % a == 0;
+                        o.push(d ? new b(l, n, 0, $, t.width, $) : new b(e, i, 0, $, t.width, $));
+                    }
+                    this.lines = o;
+                }
+            },
+            {
+                key: "drawText",
+                value: function(t, e) {
+                    var i = this.step, s = this.boldNth, r = this.boldColor, l = this.font;
+                    t.save(), t.font = l, t.fillStyle = r, t.fillText("0", 1, 15);
+                    for(var n = i * s; n < e.width; n += i * s)t.fillText(n, n, 15);
+                    for(var o = i * s; o < e.height; o += i * s)t.fillText(o, 0, o + 15);
+                    t.restore();
+                }
+            },
+            {
+                key: "draw",
+                value: function(t, e) {
+                    this.lines || this.createLines(e), this.lines.forEach(function(e) {
+                        return e.draw(t);
+                    }), this.drawText(t, e);
+                }
+            }
+        ]), t;
+    }();
+    a.Mouse = i, a.Grid = j;
+    module.exports = a;
+})();
 
-//# sourceMappingURL=index.4bf444f7.js.map
+},{}],"gkKU3":[function(require,module,exports) {
+exports.interopDefault = function(a) {
+    return a && a.__esModule ? a : {
+        default: a
+    };
+};
+exports.defineInteropFlag = function(a) {
+    Object.defineProperty(a, "__esModule", {
+        value: true
+    });
+};
+exports.exportAll = function(source, dest) {
+    Object.keys(source).forEach(function(key) {
+        if (key === "default" || key === "__esModule" || dest.hasOwnProperty(key)) return;
+        Object.defineProperty(dest, key, {
+            enumerable: true,
+            get: function() {
+                return source[key];
+            }
+        });
+    });
+    return dest;
+};
+exports.export = function(dest, destName, get) {
+    Object.defineProperty(dest, destName, {
+        enumerable: true,
+        get: get
+    });
+};
+
+},{}]},["iJYvl","h7u1C"], "h7u1C", "parcelRequire25fc")
+
+//# sourceMappingURL=index.b71e74eb.js.map

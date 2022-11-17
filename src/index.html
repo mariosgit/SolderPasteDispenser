@@ -4,28 +4,37 @@
 <head>
     <meta charset="utf-8" />
     <title>MakerspaceDA - Solder Paste Dispenser</title>
-    <link rel="stylesheet" href="assets/w3.css">
-    <link rel="stylesheet" href="styles.css" />
-    <script type="module" src="index.ts"></script>
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./assets/w3.css">
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./index.ts"></script>
 </head>
 
 <body>
-    <h1>Gerber Parser Experiment</h1>
+    <div class="w3-container w3-pale-blue">
+        <h1>Gerber Parser Experiment</h1>
 
-    <input id="fileInput" type="file" />
-    <button id="uploadButton">upload</button>
-    <span id="dropZone"> <i>file drop zone</i> </span>
+        <input id="fileInput" type="file" />
+        <button id="uploadButton">upload</button>
+        <span id="dropZone"> <i>file drop zone</i> </span>
+    </div>
 
+    <canvas id="canvas"></canvas>
 
-    <h3>Pads</h3>
-    <div id="padsField" class="w3-tiny"></div>
+    <div class="w3-container">
+        <h3>Pads</h3>
+        <div id="padsField" class="w3-tiny"></div>
 
-    <h3>Coords</h3>
-    <div id="coordsField" class="w3-tiny"></div>
+        <h3>Coords</h3>
+        <div id="coordsField" class="w3-tiny"></div>
+    </div>
+
 
 </body>
-<footer>
-    <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a>
+<footer class="w3-container w3-pale-blue">
+    <div class="w3-tiny">
+        Made @ <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a>
+    </div>
 </footer>
 
 </html>

@@ -2,13 +2,22 @@
   "name": "solderpastedispenser",
   "version": "1.0.0",
   "description": "",
-  "main": "docs/index.js",
+  "source": "./src/index.html",
+  "targets": {
+    "default": {
+      "publicUrl": "./",
+      "distDir": "./docs"
+    }
+  },
   "scripts": {
-    "start": "npx parcel --dist-dir docs --public-url ./ ./src/index.html"
+    "start": "npx parcel --target default",
+    "build": "npx parcel build "
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "canvas-coords": "0.0.3"
+  },
   "devDependencies": {
     "@types/node": "^18.11.9",
     "nodemon": "^2.0.20",
