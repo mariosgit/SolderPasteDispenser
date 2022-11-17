@@ -11,8 +11,18 @@ h1 {
 
 #canvas {
   background: gray;
-  margin: 0 auto;
+  border: 0;
+  margin: 0;
   padding: 0;
+}
+
+#debug {
+  width: 20%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  overflow-y: scroll;
 }
 
 /*# sourceMappingURL=index.4d663569.css.map */

@@ -11,30 +11,29 @@
 </head>
 
 <body>
-    <div class="w3-container w3-pale-blue">
+    <header class="w3-container w3-pale-blue">
         <h1>Gerber Parser Experiment</h1>
 
         <input id="fileInput" type="file">
         <button id="uploadButton">upload</button>
         <span id="dropZone"> <i>drop file</i> </span>
-    </div>
+    </header>
 
     <canvas id="canvas"></canvas>
 
-    <div class="w3-container">
+    <div class="w3-container" id="debug">
         <h3>Pads</h3>
         <div id="padsField" class="w3-tiny"></div>
-
         <h3>Coords</h3>
         <div id="coordsField" class="w3-tiny"></div>
     </div>
 
+    <footer class="w3-container w3-pale-blue">
+        <div class="w3-tiny">
+            Made @ <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a>
+        </div>
+    </footer>
 
 </body>
-<footer class="w3-container w3-pale-blue">
-    <div class="w3-tiny">
-        Made @ <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a>
-    </div>
-</footer>
 
 </html>

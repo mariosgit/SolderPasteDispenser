@@ -545,6 +545,8 @@ const padsField = document.getElementById("padsField");
 const coordsField = document.getElementById("coordsField");
 const dropZone = document.getElementById("dropZone");
 const canvas = document.getElementById("canvas");
+const header = document.getElementsByTagName("header")[0];
+const footer = document.getElementsByTagName("footer")[0];
 let ctx = null;
 let mouse, grid;
 let pcb;
@@ -682,7 +684,7 @@ function init() {
             ev.preventDefault();
         };
         canvas.width = innerWidth;
-        canvas.height = innerWidth;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
         mouse = new (0, _canvasCoords.Mouse)(ctx, canvas);
         mouse.track();
         grid = new (0, _canvasCoords.Grid)();
@@ -786,9 +788,9 @@ function stringToArrayBuffer(string, encoding, callback) {
 document.addEventListener("DOMContentLoaded", init);
 window.addEventListener("resize", (val)=>{
     console.log(`resize: ${val}`);
-    if (canvas) {
+    if (canvas && header && footer) {
         canvas.width = innerWidth;
-        canvas.height = innerWidth;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
         mouse.draw();
         grid.draw(ctx, canvas);
     }

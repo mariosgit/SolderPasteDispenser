@@ -7,8 +7,11 @@ const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElem
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
 const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
-let ctx:CanvasRenderingContext2D | null = null;
 
+const header = document.getElementsByTagName('header')[0];
+const footer = document.getElementsByTagName('footer')[0];
+
+let ctx:CanvasRenderingContext2D | null = null;
 let mouse: Mouse, grid: Grid;
 let pcb: PCB;
 
@@ -188,7 +191,7 @@ function init() {
         }
 
         canvas.width = innerWidth;
-        canvas.height = innerWidth;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height -7;
 
         mouse = new Mouse(ctx, canvas);
         mouse.track();
@@ -213,7 +216,6 @@ function update() {
         }
     }
 }
-
 
 function processGerberFile(file: File) {
     if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx) { // makes typescript happy...
@@ -314,9 +316,9 @@ document.addEventListener('DOMContentLoaded', init);
 
 window.addEventListener('resize', (val) => {
     console.log(`resize: ${val}`);
-    if (canvas) {
+    if (canvas && header && footer) {
         canvas.width = innerWidth;
-        canvas.height = innerWidth;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height -7;
         mouse.draw();
         grid.draw(ctx, canvas);
     }
