@@ -543,6 +543,7 @@ const uploadFileEle = document.getElementById("fileInput");
 const uploadButton = document.getElementById("uploadButton");
 const padsField = document.getElementById("padsField");
 const coordsField = document.getElementById("coordsField");
+const dropZone = document.getElementById("dropZone");
 const canvas = document.getElementById("canvas");
 let ctx = null;
 let mouse, grid;
@@ -561,6 +562,12 @@ class Pad {
     }
 }
 class PCB {
+    fileName = "";
+    mouseFlag = false;
+    mouseStartX = 0;
+    mouseStartY = 0;
+    mouseOffX = 0;
+    mouseOffY = 0;
     zoom = 6.0;
     constructor(ctx, canvas){
         this.ctx = ctx;
@@ -579,7 +586,7 @@ class PCB {
             if (sty && padset) {
                 const sw = sty.width * this.zoom;
                 const sh = sty.height * this.zoom;
-                for (let pad of padset.values())this.ctx.fillRect(pad.posX * this.zoom - sw / 2.0, pad.posY * this.zoom - sh / 2.0, sw, sh);
+                for (let pad of padset.values())this.ctx.fillRect(pad.posX * this.zoom - sw / 2.0 + this.mouseOffX, pad.posY * this.zoom - sh / 2.0 + this.mouseOffY, sw, sh);
             }
         }
         this.ctx.fill();
@@ -592,12 +599,45 @@ class PCB {
         let padset = this.mapPads.get(style);
         if (padset) padset.add(new Pad(style, x, y));
     }
+    mouseDown(event) {
+        this.mouseStartX = event.clientX - this.mouseOffX;
+        this.mouseStartY = event.clientY - this.mouseOffY;
+        this.mouseFlag = true;
+    }
+    mouseUp(event) {
+        this.mouseFlag = false;
+    }
+    mouseMove(event) {
+        if (this.mouseFlag) {
+            this.mouseOffX = event.clientX - this.mouseStartX;
+            this.mouseOffY = event.clientY - this.mouseStartY;
+        }
+    }
+    mouseWheel(event) {
+        console.log(event.deltaY);
+        if (event.deltaY > 0) this.zoom *= 1.1;
+        else this.zoom *= 0.9;
+    }
 }
 function init() {
     console.log("moinsen");
     if (uploadFileEle && uploadButton && padsField && coordsField && body && canvas) {
         ctx = canvas.getContext("2d");
-        pcb = new PCB(ctx, canvas);
+        canvas.addEventListener("mousemove", (event)=>{
+            if (pcb) pcb.mouseMove(event);
+        }, false);
+        canvas.addEventListener("mousedown", (event)=>{
+            if (pcb) pcb.mouseDown(event);
+        }, false);
+        canvas.addEventListener("mouseup", (event)=>{
+            if (pcb) pcb.mouseUp(event);
+        }, false);
+        canvas.addEventListener("mouseout", (event)=>{
+            if (pcb) pcb.mouseUp(event);
+        }, false);
+        canvas.addEventListener("wheel", (event)=>{
+            if (pcb) pcb.mouseWheel(event);
+        }, false);
         uploadButton.onclick = ()=>{
             // check if user had selected a file
             if (uploadFileEle.files && uploadFileEle.files.length > 0) {
@@ -655,13 +695,15 @@ function update() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         grid.draw(ctx, canvas);
         mouse.draw();
-        pcb.draw();
+        if (pcb) pcb.draw();
     }
 }
 function processGerberFile(file) {
     if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx) file.arrayBuffer().then((buf)=>{
         arrayBufferToString(buf, "UTF-8", (text)=>{
-            console.log(text);
+            pcb = new PCB(ctx, canvas);
+            if (dropZone) dropZone.innerText = file.name;
+            // console.log(text);
             // translate line ends...
             text = text.replace(/\r/g, ""); // remove windows trash
             const lines = text.split("\n");

@@ -5,7 +5,7 @@ const uploadFileEle: HTMLInputElement | null = <HTMLInputElement | null>document
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
-
+const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
 let ctx:CanvasRenderingContext2D | null = null;
 
@@ -35,6 +35,13 @@ export class PCB {
     canvas: HTMLCanvasElement;
     mapStyles: Map<string, PadStyle>;
     mapPads: Map<string, Set<Pad>>;
+    fileName:string = "";
+
+    mouseFlag: boolean = false;
+    mouseStartX: number = 0;
+    mouseStartY: number = 0;
+    mouseOffX: number = 0;
+    mouseOffY: number = 0;
 
     zoom:number = 6.0;
 
@@ -59,7 +66,10 @@ export class PCB {
                 const sw = sty.width * this.zoom;
                 const sh = sty.height * this.zoom;
                 for(let pad of padset.values()) {
-                    this.ctx.fillRect(pad.posX * this.zoom - sw/2.0, pad.posY * this.zoom -sh/2.0, sw, sh);
+                    this.ctx.fillRect(
+                        pad.posX * this.zoom - sw/2.0 + this.mouseOffX,
+                        pad.posY * this.zoom -sh/2.0 + this.mouseOffY,
+                        sw, sh);
                 }
             }
         }
@@ -79,6 +89,28 @@ export class PCB {
             padset.add(new Pad(style,x,y));
         }
     }
+    mouseDown(event:MouseEvent) {
+        this.mouseStartX = event.clientX - this.mouseOffX;
+        this.mouseStartY = event.clientY - this.mouseOffY;
+        this.mouseFlag = true;
+    }
+    mouseUp(event:MouseEvent) {
+        this.mouseFlag = false;
+    }
+    mouseMove(event:MouseEvent) {
+        if(this.mouseFlag) {
+            this.mouseOffX = event.clientX - this.mouseStartX;
+            this.mouseOffY = event.clientY - this.mouseStartY;
+        }
+    }
+    mouseWheel(event:WheelEvent) {
+        console.log(event.deltaY);
+        if(event.deltaY > 0) {
+            this.zoom *= 1.1;
+        } else {
+            this.zoom *= 0.9;
+        }
+    }
 }
 
 function init() {
@@ -87,7 +119,26 @@ function init() {
     if (uploadFileEle && uploadButton && padsField && coordsField && body && canvas) {
         ctx = canvas.getContext("2d");
 
-        pcb = new PCB(ctx, canvas);
+        canvas.addEventListener("mousemove", (event) => {
+            if(pcb)
+                pcb.mouseMove(event);
+        }, false);
+        canvas.addEventListener("mousedown", (event) => {
+            if(pcb)
+                pcb.mouseDown(event);
+        }, false);
+        canvas.addEventListener("mouseup", (event) => {
+            if(pcb)
+                pcb.mouseUp(event);
+        }, false);
+        canvas.addEventListener("mouseout", (event) => {
+            if(pcb)
+                pcb.mouseUp(event);
+        }, false);
+        canvas.addEventListener("wheel", (event) => {
+            if(pcb)
+                pcb.mouseWheel(event);
+        }, false);
 
         uploadButton.onclick = () => {
             // check if user had selected a file
@@ -157,7 +208,9 @@ function update() {
         grid.draw(ctx, canvas);
         mouse.draw();
 
-        pcb.draw();
+        if(pcb) {
+            pcb.draw();
+        }
     }
 }
 
@@ -166,7 +219,13 @@ function processGerberFile(file: File) {
     if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx) { // makes typescript happy...
         file.arrayBuffer().then((buf) => {
             arrayBufferToString(buf, 'UTF-8', (text: string) => {
-                console.log(text);
+
+                pcb = new PCB(ctx, canvas);
+
+                if(dropZone)
+                    dropZone.innerText = file.name;
+
+                // console.log(text);
                 // translate line ends...
                 text = text.replace(/\r/g, ''); // remove windows trash
                 const lines = text.split('\n');
