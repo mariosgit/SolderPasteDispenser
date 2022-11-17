@@ -1,0 +1,12 @@
+h1 {
+    color: orangered;
+    font-family: cursive;
+}
+
+#dropZone {
+    border: 5px solid red;
+    color: antiquewhite;
+    background-color: orangered;
+    /* width: 100%; */
+    /* height: 150px; */
+}
