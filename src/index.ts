@@ -23,6 +23,11 @@ let lastPad = "";
 
 let cancel = false;
 
+const reNumFormat = /^%FSLAX([0-9])([0-9])Y([0-9])([0-9])[*]%/;
+const reMatchPad = /^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([-0-9.]+)?/;
+const reMatchPadCoordInit = /^([DG][0-9]+)[*]/;
+const reMatchPadCoord = /^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/;
+
 function init() {
     console.log('moinsen');
 
@@ -192,6 +197,7 @@ async function processGerberText(text: string) {
     }
 }
 
+
 async function processGerberLine(line: string) {
     return new Promise<void>((resolve) => {
         if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
@@ -203,7 +209,7 @@ async function processGerberLine(line: string) {
             //   Coordinates format is 2.5:
             //   2 digits in the integer part
             //   5 digits in the fractional part
-            const matchNumFormat = line.match(/^%FSLAX([0-9])([0-9])Y([0-9])([0-9])[*]%/);
+            const matchNumFormat = reNumFormat.exec(line); //line.match();
             if (matchNumFormat) {
                 // console.log(matchNumFormat);
                 floatDezis = parseInt(matchNumFormat[1]);
@@ -218,7 +224,7 @@ async function processGerberLine(line: string) {
             //              X -0.680000 X 0.180000
             //              X -0.680000 X 0.180000
             //               X 0.680000 X 0*%
-            const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([-0-9.]+)?/);///);
+            const matchPad = reMatchPad.exec(line); // line.match();///);
             // Wenn "C" dann gibts nur eine coord
             if (matchPad) {
                 console.log(matchPad);
@@ -234,13 +240,13 @@ async function processGerberLine(line: string) {
             }
 
             // Dxx* command - should be pad draw
-            const matchPadCoordInit = line.match(/^([DG][0-9]+)[*]/);///);
+            const matchPadCoordInit = reMatchPadCoordInit.exec(line); //line.match();///);
             if (matchPadCoordInit) {
                 // console.log(matchPadCoordInit);
                 lastPad = matchPadCoordInit[1];
             }
             // a pad line: "X379984Y963930D03*"
-            const matchPadCoord = line.match(/^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/);///);
+            const matchPadCoord = reMatchPadCoord.exec(line); // line.match();///);
             if (matchPadCoord) {
                 if (lastPad.startsWith('D')) { // ignore G36 or so commands
                 // if (1) {
