@@ -114,10 +114,10 @@ export class PCB {
                     } else if (sty.form == 'C') {
                         this.ctx.beginPath();
                         this.ctx.ellipse(
-                            pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
-                            pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                            sty.width * this.zoom / 2,
-                            sty.width * this.zoom / 2,
+                            pad.posX * this.zoom + this.mouseOffX,
+                            pad.posY * this.zoom + this.mouseOffY,
+                            sw / 2,
+                            sw / 2,
                             0, 0, 2 * Math.PI);
                         // this.ctx.arc(
                         //     pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,

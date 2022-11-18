@@ -141,8 +141,6 @@ function update() {
     }
 }
 
-
-
 function processGerberFile(file: File) {
     if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
         file.arrayBuffer().then((buf) => {
@@ -154,14 +152,13 @@ function processGerberFile(file: File) {
                 if (dropZone)
                     dropZone.innerText = file.name;
 
-                processGerberFile2(text);
-
+                processGerberText(text);
             });
         });
     }
 }
 
-async function processGerberFile2(text: string) {
+async function processGerberText(text: string) {
     if (uploadButton && padsField && coordsField && body && canvas && ctx && progress) { // makes typescript happy...
 
         progress.style.display = 'block';
@@ -183,7 +180,7 @@ async function processGerberFile2(text: string) {
             }
             // console.log(`gerber(${lineNr}/${lines.length}): `);
 
-            await processGerberFileLine(line);
+            await processGerberLine(line);
 
             if (progressbar) {
                 progressbar.style.width = `${lineNr * 100 / lines.length}%`;
@@ -195,7 +192,7 @@ async function processGerberFile2(text: string) {
     }
 }
 
-async function processGerberFileLine(line: string) {
+async function processGerberLine(line: string) {
     return new Promise<void>((resolve) => {
         if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
 
@@ -225,7 +222,7 @@ async function processGerberFileLine(line: string) {
             // Wenn "C" dann gibts nur eine coord
             if (matchPad) {
                 console.log(matchPad);
-                padsField.innerHTML += `${matchPad[2]} ${matchPad[4]} ${matchPad[5]}<br>`;
+                padsField.innerHTML += `${matchPad[2]} ${matchPad[3]} ${matchPad[4]} ${matchPad[5]}<br>`;
                 if(matchPad[3] == 'RoundRect') {
                     // kicad macro schnulli
                     pcb.addPadStyle(matchPad[2], matchPad[3], Math.abs(parseFloat(matchPad[5])), Math.abs(parseFloat(matchPad[6])));
@@ -245,8 +242,8 @@ async function processGerberFileLine(line: string) {
             // a pad line: "X379984Y963930D03*"
             const matchPadCoord = line.match(/^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/);///);
             if (matchPadCoord) {
-                // if (lastPad.startsWith('D')) {
-                if (1) {
+                if (lastPad.startsWith('D')) { // ignore G36 or so commands
+                // if (1) {
                     // ignore and return ...
                     // resolve();
                     // console.log(matchPadCoord);
