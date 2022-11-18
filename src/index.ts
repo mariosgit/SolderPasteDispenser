@@ -2,7 +2,6 @@ import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/can
 import { resolve } from 'path';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
-const uploadFileEle: HTMLInputElement | null = <HTMLInputElement | null>document.getElementById("fileInput");
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
@@ -21,8 +20,24 @@ let floatFracts = 1;
 let floatDezis = 1;
 let lastPad = "";
 
-
-export class PadStyle {
+class BoundingBox {
+    minx : number = 9999;
+    miny : number = 9999;
+    maxx : number = -9999;
+    maxy : number = -9999;
+    constructor() {}
+    update(x:number, y:number) {
+        if(x < this.minx) this.minx = x;
+        if(y < this.miny) this.miny = y;
+        if(x > this.maxx) this.maxx = x;
+        if(y > this.maxy) this.maxy = y;
+        // console.log(`bb: ${this.minx} ${this.maxx} ${this.center()}`);
+    }
+    center() : [x: number, y: number] {
+        return [(this.maxx - this.minx) / 2, (this.maxy - this.miny) / 2];
+    }
+}
+class PadStyle {
     public form: string;
     public width: number;
     public height: number;
@@ -32,7 +47,7 @@ export class PadStyle {
         this.height = h;
     }
 }
-export class Pad {
+class Pad {
     posX: number;
     posY: number;
     style: string;
@@ -42,7 +57,7 @@ export class Pad {
         this.style = style;
     }
 }
-export class PCB {
+class PCB {
     ctx: CanvasRenderingContext2D;
     canvas: HTMLCanvasElement;
     mapStyles: Map<string, PadStyle>;
@@ -56,12 +71,14 @@ export class PCB {
     mouseOffY: number = 0;
 
     zoom: number = 6.0;
+    bb: BoundingBox;
 
     constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
         this.ctx = ctx;
         this.canvas = canvas;
         this.mapStyles = new Map<string, PadStyle>();
         this.mapPads = new Map<string, Set<Pad>>();
+        this.bb = new BoundingBox();
     }
 
     draw() {
@@ -70,11 +87,24 @@ export class PCB {
         this.ctx.fillStyle = 'antiquewhite';
 
         // draw zero
+        this.ctx.strokeStyle = 'black';
         this.ctx.beginPath();
         this.ctx.moveTo(-10 + this.mouseOffX, 0 + this.mouseOffY);
         this.ctx.lineTo(10 + this.mouseOffX, 0 + this.mouseOffY);
         this.ctx.moveTo(0 + this.mouseOffX, -10 + this.mouseOffY);
         this.ctx.lineTo(0 + this.mouseOffX, 10 + this.mouseOffY);
+        this.ctx.stroke();
+
+        // draw bb center
+        this.ctx.strokeStyle = 'red';
+        let center = this.bb.center();
+        center[0] = center[0]*this.zoom;
+        center[1] = center[1]*this.zoom;
+        this.ctx.beginPath();
+        this.ctx.moveTo(center[0]-10 + this.mouseOffX, center[1] + this.mouseOffY);
+        this.ctx.lineTo(center[0]+10 + this.mouseOffX, center[1] + this.mouseOffY);
+        this.ctx.moveTo(center[0] + this.mouseOffX, center[1]-10 + this.mouseOffY);
+        this.ctx.lineTo(center[0] + this.mouseOffX, center[1]+10 + this.mouseOffY);
         this.ctx.stroke();
 
         this.ctx.beginPath();
@@ -118,8 +148,17 @@ export class PCB {
         let padset = this.mapPads.get(style);
         if (padset) {
             padset.add(new Pad(style, x, y));
+            this.bb.update(x,y);
         }
     }
+
+    center() {
+        if(canvas) {
+            this.mouseOffX = -(this.bb.center()[0] * this.zoom) + canvas.width/2;
+            this.mouseOffY = -(this.bb.center()[1] * this.zoom) + canvas.height/2;
+        }
+    }
+
     mouseDown(event: MouseEvent) {
         this.mouseStartX = event.clientX - this.mouseOffX;
         this.mouseStartY = event.clientY - this.mouseOffY;
@@ -147,7 +186,7 @@ export class PCB {
 function init() {
     console.log('moinsen');
 
-    if (uploadFileEle && uploadButton && padsField && coordsField && body && canvas) {
+    if (uploadButton && padsField && coordsField && body && canvas) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -172,18 +211,25 @@ function init() {
         }, false);
 
         uploadButton.onclick = () => {
-            // check if user had selected a file
-            if (uploadFileEle.files && uploadFileEle.files.length > 0) {
-                let file = uploadFileEle.files[0]
-                console.log(file);
-                console.log(`file: ${file.name} size:${file.size}`);
+            var uploadFileEle = document.createElement('input');
+            uploadFileEle.type = "file";
+            uploadFileEle.click();
+            uploadFileEle.addEventListener("change", (ev: Event) => {
+                console.log(ev);
+                // check if user had selected a file
+                if (uploadFileEle.files && uploadFileEle.files.length > 0) {
+                    let file = uploadFileEle.files[0]
+                    console.log(file);
+                    console.log(`file: ${file.name} size:${file.size}`);
 
-                processGerberFile(file);
+                    processGerberFile(file);
 
-            } else {
-                alert('please choose a file')
-                return
-            }
+                } else {
+                    alert('please choose a file')
+                    return
+                }
+            })
+            return false;
         }
 
         body.ondrop = (ev) => {
@@ -248,7 +294,7 @@ function update() {
 
 
 function processGerberFile(file: File) {
-    if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
+    if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
         file.arrayBuffer().then((buf) => {
             arrayBufferToString(buf, 'UTF-8', (text: string) => {
 
@@ -266,12 +312,11 @@ function processGerberFile(file: File) {
 }
 
 async function processGerberFile2(text: string) {
-    if (uploadFileEle && uploadButton && padsField && coordsField && body && canvas && ctx && progress) { // makes typescript happy...
+    if (uploadButton && padsField && coordsField && body && canvas && ctx && progress) { // makes typescript happy...
 
         progress.style.display = 'block';
 
         pcb = new PCB(ctx, canvas);
-
 
         // console.log(text);
         // translate line ends...
@@ -291,13 +336,15 @@ async function processGerberFile2(text: string) {
             }
 
         } // for
+
+        pcb.center();
         progress.style.display = 'none';
     }
 }
 
 async function processGerberFileLine(line: string) {
     return new Promise<void>((resolve) => {
-        if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
+        if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
 
             // line = line.replace(/\n/g,'<br>');
 
