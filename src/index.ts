@@ -1,5 +1,5 @@
 import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
-import { resolve } from 'path';
+import { PCB } from './pcb';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
@@ -20,169 +20,6 @@ let floatFracts = 1;
 let floatDezis = 1;
 let lastPad = "";
 
-class BoundingBox {
-    minx : number = 9999;
-    miny : number = 9999;
-    maxx : number = -9999;
-    maxy : number = -9999;
-    constructor() {}
-    update(x:number, y:number) {
-        if(x < this.minx) this.minx = x;
-        if(y < this.miny) this.miny = y;
-        if(x > this.maxx) this.maxx = x;
-        if(y > this.maxy) this.maxy = y;
-        // console.log(`bb: ${this.minx} ${this.maxx} ${this.center()}`);
-    }
-    center() : [x: number, y: number] {
-        return [(this.maxx - this.minx) / 2, (this.maxy - this.miny) / 2];
-    }
-}
-class PadStyle {
-    public form: string;
-    public width: number;
-    public height: number;
-    constructor(form: string, w: number, h: number) {
-        this.form = form;
-        this.width = w;
-        this.height = h;
-    }
-}
-class Pad {
-    posX: number;
-    posY: number;
-    style: string;
-    constructor(style: string, x: number, y: number) {
-        this.posX = x;
-        this.posY = y;
-        this.style = style;
-    }
-}
-class PCB {
-    ctx: CanvasRenderingContext2D;
-    canvas: HTMLCanvasElement;
-    mapStyles: Map<string, PadStyle>;
-    mapPads: Map<string, Set<Pad>>;
-    fileName: string = "";
-
-    mouseFlag: boolean = false;
-    mouseStartX: number = 0;
-    mouseStartY: number = 0;
-    mouseOffX: number = 0;
-    mouseOffY: number = 0;
-
-    zoom: number = 6.0;
-    bb: BoundingBox;
-
-    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-        this.ctx = ctx;
-        this.canvas = canvas;
-        this.mapStyles = new Map<string, PadStyle>();
-        this.mapPads = new Map<string, Set<Pad>>();
-        this.bb = new BoundingBox();
-    }
-
-    draw() {
-        // theoretisch so...
-        // this.ctx.fillStyle = 'orangered';
-        this.ctx.fillStyle = 'antiquewhite';
-
-        // draw zero
-        this.ctx.strokeStyle = 'black';
-        this.ctx.beginPath();
-        this.ctx.moveTo(-10 + this.mouseOffX, 0 + this.mouseOffY);
-        this.ctx.lineTo(10 + this.mouseOffX, 0 + this.mouseOffY);
-        this.ctx.moveTo(0 + this.mouseOffX, -10 + this.mouseOffY);
-        this.ctx.lineTo(0 + this.mouseOffX, 10 + this.mouseOffY);
-        this.ctx.stroke();
-
-        // draw bb center
-        this.ctx.strokeStyle = 'red';
-        let center = this.bb.center();
-        center[0] = center[0]*this.zoom;
-        center[1] = center[1]*this.zoom;
-        this.ctx.beginPath();
-        this.ctx.moveTo(center[0]-10 + this.mouseOffX, center[1] + this.mouseOffY);
-        this.ctx.lineTo(center[0]+10 + this.mouseOffX, center[1] + this.mouseOffY);
-        this.ctx.moveTo(center[0] + this.mouseOffX, center[1]-10 + this.mouseOffY);
-        this.ctx.lineTo(center[0] + this.mouseOffX, center[1]+10 + this.mouseOffY);
-        this.ctx.stroke();
-
-        this.ctx.beginPath();
-        for (let padstyle of this.mapPads.keys()) {
-
-            const sty = this.mapStyles.get(padstyle);
-            const padset = this.mapPads.get(padstyle);
-            if (sty && padset) {
-                const sw = sty.width * this.zoom;
-                const sh = sty.height * this.zoom;
-                for (let pad of padset.values()) {
-                    if (sty.form == 'R' || sty.form == 'O') {
-                        this.ctx.fillRect(
-                            pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
-                            pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                            sw, sh);
-                    } else if (sty.form == 'C') {
-                        this.ctx.arc(
-                            pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
-                            pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                            sty.width * this.zoom,
-                            0, 359);
-                    } else {
-                        console.log(`draw quatsch ${sty}`);
-                        break;
-                    }
-                }
-            }
-        }
-        this.ctx.fill();
-    }
-
-    addPadStyle(name: string, form: string, w: number, h: number) {
-        this.mapStyles.set(name, new PadStyle(form, w, h));
-    }
-
-    addPad(style: string, x: number, y: number) {
-        if (!this.mapPads.has(style)) {
-            this.mapPads.set(style, new Set<Pad>());
-        }
-        let padset = this.mapPads.get(style);
-        if (padset) {
-            padset.add(new Pad(style, x, y));
-            this.bb.update(x,y);
-        }
-    }
-
-    center() {
-        if(canvas) {
-            this.mouseOffX = -(this.bb.center()[0] * this.zoom) + canvas.width/2;
-            this.mouseOffY = -(this.bb.center()[1] * this.zoom) + canvas.height/2;
-        }
-    }
-
-    mouseDown(event: MouseEvent) {
-        this.mouseStartX = event.clientX - this.mouseOffX;
-        this.mouseStartY = event.clientY - this.mouseOffY;
-        this.mouseFlag = true;
-    }
-    mouseUp(event: MouseEvent) {
-        this.mouseFlag = false;
-    }
-    mouseMove(event: MouseEvent) {
-        if (this.mouseFlag) {
-            this.mouseOffX = event.clientX - this.mouseStartX;
-            this.mouseOffY = event.clientY - this.mouseStartY;
-        }
-    }
-    mouseWheel(event: WheelEvent) {
-        // console.log(event.deltaY);
-        if (event.deltaY > 0) {
-            this.zoom *= 1.1;
-        } else {
-            this.zoom *= 0.9;
-        }
-    }
-}
-
 function init() {
     console.log('moinsen');
 
@@ -190,24 +27,24 @@ function init() {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
-            if (pcb)
-                pcb.mouseMove(event);
+            if (pcb) pcb.mouseMove(event);
+            event.preventDefault();
         }, false);
         canvas.addEventListener("mousedown", (event) => {
-            if (pcb)
-                pcb.mouseDown(event);
+            if (pcb) pcb.mouseDown(event);
+            event.preventDefault();
         }, false);
         canvas.addEventListener("mouseup", (event) => {
-            if (pcb)
-                pcb.mouseUp(event);
+            if (pcb) pcb.mouseUp(event);
+            event.preventDefault();
         }, false);
         canvas.addEventListener("mouseout", (event) => {
-            if (pcb)
-                pcb.mouseUp(event);
+            if (pcb) pcb.mouseUp(event);
+            event.preventDefault();
         }, false);
         canvas.addEventListener("wheel", (event) => {
-            if (pcb)
-                pcb.mouseWheel(event);
+            if (pcb) pcb.mouseWheel(event);
+            event.preventDefault();
         }, false);
 
         uploadButton.onclick = () => {
@@ -281,9 +118,16 @@ function update() {
     if (canvas && ctx) {
         window.requestAnimationFrame(update);
 
+        ctx.setTransform(
+            1,  0,
+            0, -1,
+            0, canvas.height);
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         grid.draw(ctx, canvas);
         mouse.draw();
+
+        // ctx.scale(1,-1); // flip display y
 
         if (pcb) {
             pcb.draw();
@@ -337,7 +181,6 @@ async function processGerberFile2(text: string) {
 
         } // for
 
-        pcb.center();
         progress.style.display = 'none';
     }
 }
@@ -404,6 +247,7 @@ async function processGerberFileLine(line: string) {
                     fy = fy * -1.0;
                 }
 
+                fy = fy;
                 coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
 
                 pcb.addPad(lastPad, fx, fy);
@@ -414,6 +258,7 @@ async function processGerberFileLine(line: string) {
                 // }
             }
         } // if
+        pcb.center();
         setTimeout(resolve, 0); // this enables the progressbar / UI updates !
     });
 }
@@ -433,6 +278,17 @@ function stringToArrayBuffer(string, encoding, callback) {
     var reader = new FileReader();
     reader.onload = (evt) => { callback(evt.target.result); };
     reader.readAsArrayBuffer(blob);
+}
+
+globalThis.accordionToggler = (id) => {
+    var elem = document.getElementById(id);
+    if(elem) {
+        if (elem.className.indexOf("w3-show") == -1) {
+            elem.className += " w3-show";
+        } else {
+            elem.className = elem.className.replace(" w3-show", "");
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

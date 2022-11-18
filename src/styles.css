@@ -1,6 +1,5 @@
 h1 {
     color: orangered;
-    font-family: cursive;
 }
 
 #canvas {
@@ -12,11 +11,12 @@ h1 {
 }
 
 #debug {
+    background: rgba(128, 128, 128, 0.445);
     position: absolute;
     top: 0px;
     right: 0px;
-    width: 20%;
-    height: 100%;
+    width: 25%;
+    height: 90%;
     overflow-y: scroll;
 }
 

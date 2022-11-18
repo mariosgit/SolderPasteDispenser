@@ -12,10 +12,10 @@
 
 <body>
     <header class="w3-container w3-pale-blue">
-        <h1>Gerber Parser Experiment</h1>
+        <h1 class="w3-cursive">Gerber Parser Experiment</h1>
 
         <div class="w3-bar">
-            <button class="w3-button w3-red" id="uploadButton">upload</button>
+            <button class="w3-button w3-deep-orange" id="uploadButton">upload</button>
             <span id="dropZone"> <i>drop file</i> </span>
         </div>
     </header>
@@ -24,19 +24,28 @@
 
     <div class="w3-border" id="progress">
         loading...
-        <div class="w3-orange w3-round " id="progressbar" style="height:24px;width:20%"></div>
+        <div class="w3-deep-orange w3-round " id="progressbar" style="height:24px;width:20%"></div>
     </div>
 
-    <div class="w3-container" id="debug">
-        <h3>Pads</h3>
-        <div id="padsField" class="w3-tiny"></div>
-        <h3>Coords</h3>
-        <div id="coordsField" class="w3-tiny"></div>
+    <div class="w3-panel" id="debug">
+        <button onclick="globalThis.accordionToggler('Device')" class="w3-button w3-block w3-deep-orange w3-left-align">Device</button>
+        <div id="Device" class="w3-hide">
+            todo
+        </div>
+        <button onclick="globalThis.accordionToggler('Coors')" class="w3-button w3-block w3-deep-orange w3-left-align">Coords..</button>
+        <div id="Coors" class="w3-hide">
+            <h4>Pads</h4>
+            <div id="padsField" class="w3-tiny"></div>
+            <h4>Coords</h4>
+            <div id="coordsField" class="w3-tiny"></div>
+        </div>
+
     </div>
 
     <footer class="w3-container w3-pale-blue">
         <div class="w3-tiny">
-            Made @ <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a> <a
+            <img src="./assets/favicon.ico" alt="" width="12px">
+            made @ <a href="https://makerspace-darmstadt.de/">makerspace-darmstadt.de</a> <a
                 href="https://github.com/mariosgit/SolderPasteDispenser">github</a>
         </div>
     </footer>
