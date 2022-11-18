@@ -13,7 +13,7 @@ Try me here https://mariosgit.github.io/SolderPasteDispenser/
 Clone the repo, then...
 
 ```
-npm init
+npm i
 npm start
 ```
 

@@ -1,4 +1,4 @@
-import { Grid, Mouse } from 'canvas-coords'
+import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
 
 const body:HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const uploadFileEle: HTMLInputElement | null = <HTMLInputElement | null>document.getElementById("fileInput");
@@ -7,6 +7,7 @@ const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElem
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
 const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
+const progress: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("progress");
 
 const header = document.getElementsByTagName('header')[0];
 const footer = document.getElementsByTagName('footer')[0];
@@ -16,9 +17,11 @@ let mouse: Mouse, grid: Grid;
 let pcb: PCB;
 
 export class PadStyle {
+    public form:string;
     public width:number;
     public height:number;
-    constructor(w:number, h:number) {
+    constructor(form:string, w:number, h:number) {
+        this.form = form;
         this.width = w;
         this.height = h;
     }
@@ -60,6 +63,14 @@ export class PCB {
         // this.ctx.fillStyle = 'orangered';
         this.ctx.fillStyle = 'antiquewhite';
 
+        // draw zero
+        this.ctx.beginPath();
+        this.ctx.moveTo(-10 + this.mouseOffX,0 + this.mouseOffY);
+        this.ctx.lineTo(10 + this.mouseOffX,0 + this.mouseOffY);
+        this.ctx.moveTo(0 + this.mouseOffX,-10 + this.mouseOffY);
+        this.ctx.lineTo(0 + this.mouseOffX,10 + this.mouseOffY);
+        this.ctx.stroke();
+
         this.ctx.beginPath();
         for(let padstyle of this.mapPads.keys()) {
 
@@ -69,18 +80,29 @@ export class PCB {
                 const sw = sty.width * this.zoom;
                 const sh = sty.height * this.zoom;
                 for(let pad of padset.values()) {
-                    this.ctx.fillRect(
-                        pad.posX * this.zoom - sw/2.0 + this.mouseOffX,
-                        pad.posY * this.zoom -sh/2.0 + this.mouseOffY,
-                        sw, sh);
+                    if(sty.form == 'R' || sty.form == 'O') {
+                        this.ctx.fillRect(
+                            pad.posX * this.zoom - sw/2.0 + this.mouseOffX,
+                            pad.posY * this.zoom -sh/2.0 + this.mouseOffY,
+                            sw, sh);
+                    } else if (sty.form == 'C') {
+                        this.ctx.arc(
+                            pad.posX * this.zoom - sw/2.0 + this.mouseOffX,
+                            pad.posY * this.zoom -sh/2.0 + this.mouseOffY,
+                            sty.width * this.zoom,
+                            0,359);
+                    } else {
+                        console.log(`draw quatsch ${sty}`);
+                        break;
+                    }
                 }
             }
         }
         this.ctx.fill();
     }
 
-    addPadStyle(name:string, w:number, h:number) {
-        this.mapStyles.set(name, new PadStyle(w,h));
+    addPadStyle(name:string, form:string, w:number, h:number) {
+        this.mapStyles.set(name, new PadStyle(form,w,h));
     }
 
     addPad(style:string, x:number, y:number) {
@@ -218,9 +240,12 @@ function update() {
 }
 
 function processGerberFile(file: File) {
-    if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx) { // makes typescript happy...
+    if (uploadFileEle && uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
         file.arrayBuffer().then((buf) => {
             arrayBufferToString(buf, 'UTF-8', (text: string) => {
+
+                progress.style.display = 'block';
+                const progressbar = document.getElementById('progressbar');
 
                 pcb = new PCB(ctx, canvas);
 
@@ -235,7 +260,9 @@ function processGerberFile(file: File) {
                 let floatDezis = 1;
                 let lastPad = "";
 
+                let lineNr = 1;
                 for (let line of lines) {
+                    lineNr++;
                     // line = line.replace(/\n/g,'<br>');
 
                     // Zahlenformat info line "%FSLAX34Y34*%"
@@ -248,19 +275,21 @@ function processGerberFile(file: File) {
                         // console.log(matchNumFormat);
                         floatDezis = parseInt(matchNumFormat[1]);
                         floatFracts = parseInt(matchNumFormat[2]);
-                        console.log(`float digits = ${floatDezis} ${floatFracts}`);
+                        console.log(`gerber: float digits = ${floatDezis} ${floatFracts}`);
                     }
 
                     // check for pad definitions
-                    const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z])[,]([0-9.]+)[X]([0-9.]+)/);///);
+                    const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z])[,]([0-9.]+)[X]?([0-9.]+)?/);///);
                     // console.log(matchPad);
+                    // Wenn "C" dann gibts nur eine coord
                     if (matchPad) {
                         padsField.innerHTML += `${matchPad[2]} ${matchPad[4]} ${matchPad[5]}<br>`;
-                        pcb.addPadStyle(matchPad[2], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
+                        pcb.addPadStyle(matchPad[2], matchPad[3], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
+                        console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
                     }
 
                     // a pad line: "X379984Y963930D03*"
-                    const matchPadCoord = line.match(/^X([0-9]+)Y([0-9]+)D([0-9]+)[*]/);///);
+                    const matchPadCoord = line.match(/^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/);///);
                     const matchPadCoordInit = line.match(/^(D[0-9]+)[*]/);///);
                     if (matchPadCoordInit) {
                         // console.log(matchPadCoordInit);
@@ -268,8 +297,8 @@ function processGerberFile(file: File) {
                     }
                     if (matchPadCoord) {
                         // console.log(matchPadCoord);
-                        let sx = matchPadCoord[1];
-                        let sy = matchPadCoord[2];
+                        let sx = matchPadCoord[2];
+                        let sy = matchPadCoord[4];
                         const len = floatDezis + floatFracts;
                         // fill freak's leading zeros
                         while (sx.length < len) {
@@ -285,12 +314,29 @@ function processGerberFile(file: File) {
                         sy = `${sy.substring(0, floatDezis)}.${sy.substring(floatDezis)}`;
                         fx = parseFloat(sx);
                         fy = parseFloat(sy);
+                        if(matchPadCoord[1] == '-') {
+                            fx = fx * -1.0;
+                        }
+                        if(matchPadCoord[3] == '-') {
+                            fy = fy * -1.0;
+                        }
+
                         coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
 
                         pcb.addPad(lastPad, fx,fy);
+                        console.log(`gerber(${lineNr}/${lines.length}): pad ${lastPad}, ${fx}, ${fy}`);
+                        if(progressbar) {
+                            progressbar.style.width = `${lineNr*100/lines.length}%`;
+                        }
+
+                        if(lineNr > 1500) {
+                            break; // for testing !!!
+                        }
                     }
 
-                }
+                } // for
+                progress.style.display = 'none';
+
             });
         })
     }

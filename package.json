@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "start": "npx parcel --target default",
+    "start": "npx parcel --port=3456 --target default",
     "build": "npx parcel build "
   },
   "author": "",
