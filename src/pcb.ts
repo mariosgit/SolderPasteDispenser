@@ -94,7 +94,6 @@ export class PCB {
         this.ctx.rect(this.bb.zero(this.zoom)[0] + this.mouseOffX, this.bb.zero(this.zoom)[1] + this.mouseOffY, this.bb.size(this.zoom)[0], this.bb.size(this.zoom)[1]);
         this.ctx.stroke();
 
-        this.ctx.beginPath();
         for (let padstyle of this.mapPads.keys()) {
 
             const sty = this.mapStyles.get(padstyle);
@@ -103,25 +102,36 @@ export class PCB {
                 const sw = sty.width * this.zoom;
                 const sh = sty.height * this.zoom;
                 for (let pad of padset.values()) {
-                    if (sty.form == 'R' || sty.form == 'O') {
+                    if (sty.form == 'R' || sty.form == 'O' || sty.form == 'RoundRect') {
+                        this.ctx.beginPath();
+
                         this.ctx.fillRect(
                             pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
                             pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
                             sw, sh);
+                        this.ctx.fill();
+
                     } else if (sty.form == 'C') {
-                        this.ctx.arc(
+                        this.ctx.beginPath();
+                        this.ctx.ellipse(
                             pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
                             pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                            sty.width * this.zoom,
-                            0, 359);
+                            sty.width * this.zoom / 2,
+                            sty.width * this.zoom / 2,
+                            0, 0, 2 * Math.PI);
+                        // this.ctx.arc(
+                        //     pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
+                        //     pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
+                        //     sty.width * this.zoom,
+                        //     0, 2 * Math.PI);
+                        this.ctx.fill();
                     } else {
-                        console.log(`draw quatsch ${sty}`);
+                        console.log(`draw quatsch ${sty.form}`);
                         break;
                     }
                 }
             }
         }
-        this.ctx.fill();
     }
 
     addPadStyle(name: string, form: string, w: number, h: number) {

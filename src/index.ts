@@ -9,6 +9,7 @@ const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
 const progress: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("progress");
 const progressbar: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById('progressbar');
+const progressCancel: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById('progressCancel');
 
 const header = document.getElementsByTagName('header')[0];
 const footer = document.getElementsByTagName('footer')[0];
@@ -20,10 +21,12 @@ let floatFracts = 1;
 let floatDezis = 1;
 let lastPad = "";
 
+let cancel = false;
+
 function init() {
     console.log('moinsen');
 
-    if (uploadButton && padsField && coordsField && body && canvas) {
+    if (uploadButton && progressCancel && padsField && coordsField && body && canvas) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -67,6 +70,9 @@ function init() {
                 }
             })
             return false;
+        }
+        progressCancel.onclick = () => {
+            cancel = true;
         }
 
         body.ondrop = (ev) => {
@@ -119,7 +125,7 @@ function update() {
         window.requestAnimationFrame(update);
 
         ctx.setTransform(
-            1,  0,
+            1, 0,
             0, -1,
             0, canvas.height);
 
@@ -171,6 +177,10 @@ async function processGerberFile2(text: string) {
         for (let line of lines) {
             lineNr++;
 
+            if(cancel) {
+                cancel = false;
+                break;
+            }
             // console.log(`gerber(${lineNr}/${lines.length}): `);
 
             await processGerberFileLine(line);
@@ -205,53 +215,73 @@ async function processGerberFileLine(line: string) {
             }
 
             // check for pad definitions
-            const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z])[,]([0-9.]+)[X]?([0-9.]+)?/);///);
-            // console.log(matchPad);
+            // %ADD21R,0.600000X1.050000*%
+            // %ADD10RoundRect,0.120000 X -0.180000
+            //               X 0.680000 X -0.180000
+            //              X -0.680000 X 0.180000
+            //              X -0.680000 X 0.180000
+            //               X 0.680000 X 0*%
+            const matchPad = line.match(/^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([-0-9.]+)?/);///);
             // Wenn "C" dann gibts nur eine coord
             if (matchPad) {
+                console.log(matchPad);
                 padsField.innerHTML += `${matchPad[2]} ${matchPad[4]} ${matchPad[5]}<br>`;
-                pcb.addPadStyle(matchPad[2], matchPad[3], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
-                console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
+                if(matchPad[3] == 'RoundRect') {
+                    // kicad macro schnulli
+                    pcb.addPadStyle(matchPad[2], matchPad[3], Math.abs(parseFloat(matchPad[5])), Math.abs(parseFloat(matchPad[6])));
+                    console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${Math.abs(parseFloat(matchPad[5]))}, ${Math.abs(parseFloat(matchPad[6]))}`);
+                } else {
+                    pcb.addPadStyle(matchPad[2], matchPad[3], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
+                    console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
+                }
             }
 
-            // a pad line: "X379984Y963930D03*"
-            const matchPadCoord = line.match(/^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/);///);
-            const matchPadCoordInit = line.match(/^(D[0-9]+)[*]/);///);
+            // Dxx* command - should be pad draw
+            const matchPadCoordInit = line.match(/^([DG][0-9]+)[*]/);///);
             if (matchPadCoordInit) {
                 // console.log(matchPadCoordInit);
                 lastPad = matchPadCoordInit[1];
             }
+            // a pad line: "X379984Y963930D03*"
+            const matchPadCoord = line.match(/^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/);///);
             if (matchPadCoord) {
-                // console.log(matchPadCoord);
-                let sx = matchPadCoord[2];
-                let sy = matchPadCoord[4];
-                const len = floatDezis + floatFracts;
-                // fill freak's leading zeros
-                while (sx.length < len) {
-                    sx = `0${sx}`;
-                }
-                while (sy.length < len) {
-                    sy = `0${sy}`;
-                }
-                // make a freak'n float
-                let fx = 0.0;
-                let fy = 0.0;
-                sx = `${sx.substring(0, floatDezis)}.${sx.substring(floatDezis)}`;
-                sy = `${sy.substring(0, floatDezis)}.${sy.substring(floatDezis)}`;
-                fx = parseFloat(sx);
-                fy = parseFloat(sy);
-                if (matchPadCoord[1] == '-') {
-                    fx = fx * -1.0;
-                }
-                if (matchPadCoord[3] == '-') {
-                    fy = fy * -1.0;
-                }
+                // if (lastPad.startsWith('D')) {
+                if (1) {
+                    // ignore and return ...
+                    // resolve();
+                    // console.log(matchPadCoord);
+                    let sx = matchPadCoord[2];
+                    let sy = matchPadCoord[4];
+                    const len = floatDezis + floatFracts;
+                    // fill freak's leading zeros
+                    while (sx.length < len) {
+                        sx = `0${sx}`;
+                    }
+                    while (sy.length < len) {
+                        sy = `0${sy}`;
+                    }
+                    // make a freak'n float
+                    let fx = 0.0;
+                    let fy = 0.0;
+                    sx = `${sx.substring(0, floatDezis)}.${sx.substring(floatDezis)}`;
+                    sy = `${sy.substring(0, floatDezis)}.${sy.substring(floatDezis)}`;
+                    fx = parseFloat(sx);
+                    fy = parseFloat(sy);
+                    if (matchPadCoord[1] == '-') {
+                        fx = fx * -1.0;
+                    }
+                    if (matchPadCoord[3] == '-') {
+                        fy = fy * -1.0;
+                    }
 
-                fy = fy;
-                coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
+                    fy = fy;
+                    coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
 
-                pcb.addPad(lastPad, fx, fy);
-                // console.log(`gerber: pad ${lastPad}, ${fx}, ${fy}`);
+                    pcb.addPad(lastPad, fx, fy);
+                    // console.log(`gerber: pad ${lastPad}, ${fx}, ${fy}`);
+                } else {
+                    console.log(`ignoring ${lastPad}`);
+                }
 
                 // if(lineNr > 1500) {
                 //     break; // for testing !!!
@@ -282,7 +312,7 @@ function stringToArrayBuffer(string, encoding, callback) {
 
 globalThis.accordionToggler = (id) => {
     var elem = document.getElementById(id);
-    if(elem) {
+    if (elem) {
         if (elem.className.indexOf("w3-show") == -1) {
             elem.className += " w3-show";
         } else {

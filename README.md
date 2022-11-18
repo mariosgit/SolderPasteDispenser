@@ -29,6 +29,11 @@ This is a NPM project, runs all the software locally in chrome.
 
 Indent with 4 spaces
 
+Befor pushing, build the github page with
+```
+npm run build
+```
+
 # Refs
 
 Inspired by ct's https://github.com/MakeMagazinDE/Solder-Paste-Dispenser - uhhaaa Delphy SW :-( Aber warum???
