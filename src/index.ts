@@ -193,6 +193,8 @@ async function processGerberText(text: string) {
 
         } // for
 
+        pcb.retree();
+
         progress.style.display = 'none';
     }
 }
@@ -227,15 +229,15 @@ async function processGerberLine(line: string) {
             const matchPad = reMatchPad.exec(line); // line.match();///);
             // Wenn "C" dann gibts nur eine coord
             if (matchPad) {
-                console.log(matchPad);
+                // console.log(matchPad);
                 padsField.innerHTML += `${matchPad[2]} ${matchPad[3]} ${matchPad[4]} ${matchPad[5]}<br>`;
                 if(matchPad[3] == 'RoundRect') {
                     // kicad macro schnulli
                     pcb.addPadStyle(matchPad[2], matchPad[3], Math.abs(parseFloat(matchPad[5])), Math.abs(parseFloat(matchPad[6])));
-                    console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${Math.abs(parseFloat(matchPad[5]))}, ${Math.abs(parseFloat(matchPad[6]))}`);
+                    // console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${Math.abs(parseFloat(matchPad[5]))}, ${Math.abs(parseFloat(matchPad[6]))}`);
                 } else {
                     pcb.addPadStyle(matchPad[2], matchPad[3], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
-                    console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
+                    // console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
                 }
             }
 
