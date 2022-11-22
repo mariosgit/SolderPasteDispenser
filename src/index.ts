@@ -1,5 +1,6 @@
 import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
 import { Device } from './device';
+import { Marlin } from './deviceMarlin';
 import { PCB } from './pcb';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
@@ -29,7 +30,7 @@ const reMatchPad = /^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([
 const reMatchPadCoordInit = /^([DG][0-9]+)[*]/;
 const reMatchPadCoord = /^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/;
 
-let device = new Device();
+let device = new Marlin();
 
 function init() {
     console.log('moinsen');
@@ -182,7 +183,7 @@ async function processGerberText(text: string) {
         for (let line of lines) {
             lineNr++;
 
-            if(cancel) {
+            if (cancel) {
                 cancel = false;
                 break;
             }
@@ -234,7 +235,7 @@ async function processGerberLine(line: string) {
             if (matchPad) {
                 // console.log(matchPad);
                 padsField.innerHTML += `${matchPad[2]} ${matchPad[3]} ${matchPad[4]} ${matchPad[5]}<br>`;
-                if(matchPad[3] == 'RoundRect') {
+                if (matchPad[3] == 'RoundRect') {
                     // kicad macro schnulli
                     pcb.addPadStyle(matchPad[2], matchPad[3], Math.abs(parseFloat(matchPad[5])), Math.abs(parseFloat(matchPad[6])));
                     // console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${Math.abs(parseFloat(matchPad[5]))}, ${Math.abs(parseFloat(matchPad[6]))}`);
@@ -254,7 +255,7 @@ async function processGerberLine(line: string) {
             const matchPadCoord = reMatchPadCoord.exec(line); // line.match();///);
             if (matchPadCoord) {
                 if (lastPad.startsWith('D')) { // ignore G36 or so commands
-                // if (1) {
+                    // if (1) {
                     // ignore and return ...
                     // resolve();
                     // console.log(matchPadCoord);
@@ -318,14 +319,18 @@ function stringToArrayBuffer(string, encoding, callback) {
     reader.readAsArrayBuffer(blob);
 }
 
-globalThis.accordionToggler = (id) => {
+globalThis.accordionToggler = (id: string) => {
     var elem = document.getElementById(id);
     if (elem) {
-        if (elem.className.indexOf("w3-show") == -1) {
+        if (elem.className.indexOf("w3-show") == -1 && elem.className.indexOf("w3-hide") == -1) {
             elem.className += " w3-show";
+        } else if (elem.className.indexOf("w3-show") != -1) {
+            elem.className = elem.className.replace("w3-show", "w3-hide");
         } else {
-            elem.className = elem.className.replace(" w3-show", "");
+            elem.className = elem.className.replace("w3-hide", "w3-show");
         }
+    } else {
+        console.warn('accordionToggler no elem with id:', id);
     }
 }
 
