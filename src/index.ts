@@ -1,4 +1,5 @@
 import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
+import { Device } from './device';
 import { PCB } from './pcb';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
@@ -27,6 +28,8 @@ const reNumFormat = /^%FSLAX([0-9])([0-9])Y([0-9])([0-9])[*]%/;
 const reMatchPad = /^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([-0-9.]+)?/;
 const reMatchPadCoordInit = /^([DG][0-9]+)[*]/;
 const reMatchPadCoord = /^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/;
+
+let device = new Device();
 
 function init() {
     console.log('moinsen');

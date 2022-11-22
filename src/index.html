@@ -30,11 +30,14 @@
 
     <div class="w3-panel" id="debug">
         <button onclick="globalThis.accordionToggler('Device')" class="w3-button w3-block w3-deep-orange w3-left-align">Device</button>
-        <div id="Device" class="w3-hide">
-            todo
+        <div id="Device" class="w3-show">
+            <button id="deviceCheck" class="w3-button w3-grey">check</button>
+            <button id="deviceConnect" class="w3-button w3-grey">connect</button>
+            <button id="deviceDisconnect" class="w3-button w3-grey">disconnect</button>
+            <button id="deviceDosome" class="w3-button w3-grey">dosome</button>
         </div>
         <button onclick="globalThis.accordionToggler('Coors')" class="w3-button w3-block w3-deep-orange w3-left-align">Coords..</button>
-        <div id="Coors" class="w3-show">
+        <div id="Coors" class="w3-hide">
             <h4>Pads</h4>
             <div id="padsField" class="w3-tiny"></div>
             <h4>Coords</h4>
