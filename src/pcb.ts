@@ -139,11 +139,12 @@ export class PCB {
         } // for padstyle
         this.ctx.strokeStyle = 'purple';
         this.ctx.beginPath();
+        const csize = 5;
         for(const near of this.nearest) {
-            this.ctx.moveTo((near[0].posX-1) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo((near[0].posX+1) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+1) * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-1) * this.zoom + this.mouseOffY);
+            this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
 
             // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
         }
@@ -176,12 +177,6 @@ export class PCB {
 
     retree() {
         try {
-            // var pads = [
-            //     {posX: 1, posY: 2},
-            //     {posX: 3, posY: 4},
-            //     {posX: 5, posY: 6},
-            //     {posX: 7, posY: 8}
-            //   ];
             let pads : Pad[] = [];
             for (let padsets of this.mapPads.values()) {
                 for (let pad of padsets) {
