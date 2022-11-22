@@ -1,3 +1,5 @@
+import {kdTree} from 'kd-tree-javascript';
+
 class BoundingBox {
     minx: number = 99999;
     miny: number = 99999;
@@ -57,6 +59,9 @@ export class PCB {
 
     zoom: number = 6.0;
     bb: BoundingBox;
+
+    tree: any;
+    nearest: any = [];
 
     constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
         this.ctx = ctx;
@@ -131,7 +136,20 @@ export class PCB {
                     }
                 }
             }
+        } // for padstyle
+        this.ctx.strokeStyle = 'purple';
+        this.ctx.beginPath();
+        const csize = 5;
+        for(const near of this.nearest) {
+            this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
+
+            // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
         }
+        this.ctx.stroke();
+
     }
 
     addPadStyle(name: string, form: string, w: number, h: number) {
@@ -144,7 +162,8 @@ export class PCB {
         }
         let padset = this.mapPads.get(style);
         if (padset) {
-            padset.add(new Pad(style, x, y));
+            const newpad = new Pad(style, x, y);
+            padset.add(newpad);
             this.bb.update(x, y);
         }
     }
@@ -156,6 +175,21 @@ export class PCB {
         }
     }
 
+    retree() {
+        try {
+            let pads : Pad[] = [];
+            for (let padsets of this.mapPads.values()) {
+                for (let pad of padsets) {
+                    pads.push(pad);
+                }
+            }
+            
+            this.tree = new kdTree(pads, PCB.distance, ["posX", "posY"]);
+            console.log('tree bf:', this.tree.balanceFactor());
+    
+        } catch(err) { console.error(err); }
+    }
+
     mouseDown(event: MouseEvent) {
         const trans = this.ctx.getTransform();
         console.log(trans);
@@ -165,6 +199,18 @@ export class PCB {
     }
     mouseUp(event: MouseEvent) {
         this.mouseFlag = false;
+
+        const trans = this.ctx.getTransform();
+        console.log(trans, event);
+        console.log('', this.canvas.height-(event.clientY-this.canvas.offsetTop), this.mouseOffY);
+        const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
+        const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
+        if(this.tree) {
+            this.nearest = this.tree.nearest({ posX: mx, posY: my }, 1);
+            for(const near of this.nearest) {
+                console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
+            }
+        }
     }
     mouseMove(event: MouseEvent) {
         const trans = this.ctx.getTransform();
@@ -180,5 +226,9 @@ export class PCB {
         } else {
             this.zoom *= 0.9;
         }
+    }
+
+    static distance(a:Pad, b:Pad) {
+        return Math.pow(a.posX - b.posX, 2) +  Math.pow(a.posY - b.posY, 2);
     }
 }
