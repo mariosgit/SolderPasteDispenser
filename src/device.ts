@@ -10,6 +10,7 @@ export class Device {
     deviceDosome: HTMLButtonElement | null;
     deviceInput: HTMLInputElement | null;
     deviceInputForm: HTMLFormElement | null;
+    deviceLog: HTMLDivElement | null;
     port: any;
     textDecoder: TextDecoderStream;
     reader: ReadableStreamDefaultReader<string>;
@@ -22,6 +23,7 @@ export class Device {
         this.deviceDosome = <HTMLButtonElement | null>document.getElementById("deviceDosome");
         this.deviceInput = <HTMLInputElement | null>document.getElementById("deviceInput");
         this.deviceInputForm = <HTMLFormElement | null>document.getElementById("deviceInputForm");
+        this.deviceLog = <HTMLDivElement | null>document.getElementById("deviceLog");
         this.port = null;
         this.textDecoder = new TextDecoderStream();
         if (this.deviceCheck && this.deviceConnect && this.deviceDisconnect && this.deviceDosome && this.deviceInput && this.deviceInputForm) {
@@ -29,7 +31,7 @@ export class Device {
             this.deviceConnect.onclick = this.serialConnect.bind(this);
             this.deviceDisconnect.onclick = this.serialDisconnect.bind(this);
             this.deviceDosome.onclick = this.serialDosome.bind(this);
-            this.deviceInput.onchange = this.serialInputChange.bind(this);
+            // this.deviceInput.onchange = this.serialInputChange.bind(this);
             this.deviceInputForm.onsubmit = this.serialInputForm.bind(this);
         }
         this.serialCheck();
@@ -63,25 +65,35 @@ export class Device {
                 console.log(`updatePorts port pid:${usbProductId} vid:${usbVendorId}`);
             }
         });
-
     }
+    serialError(error:string) {
+        if(this.deviceLog) {
+            this.deviceLog.innerHTML += `<span class="w3-red">${error}</span>`
+        }
+    }
+
     protected onSerialConnected() {
         console.log('Device: onSerialConnected')
     }
     protected onSerialDisconnected() {
         console.log('Device: onSerialDisconnected')
     }
+
     async serialConnect() {
         // opens dialog where user can select a device
         this.port = await navigator.serial.requestPort();
         await this.port.open({ baudRate: 115200 }).then((val) => {
             console.log('port opened ? ', this.port);
+            if(this.deviceLog) {
+                this.deviceLog.innerHTML = "connected<br>";
+            }
             this.port.onconnect = () => { console.log(`CONNECTED`); };
             this.port.ondisconnect = () => { console.log(`DISCONNECTED`); this.onSerialDisconnected(); };
             setTimeout(this.serialRead.bind(this), 0);
             this.onSerialConnected(); // signal derived class
         }).catch((error) => {
             console.warn(error);
+            this.serialError(error.toString());
         });
     }
     async serialRead() {
@@ -129,6 +141,7 @@ export class Device {
             }
         } catch (error) {
             console.warn(error);
+            this.serialError(error.toString());
         }
     }
     serialCallback() {
