@@ -99,11 +99,9 @@ export class Marlin extends Device {
     }
 
     onBtnHome() {
-        console.log('click home');
         this.serialWrite('G28'); // all relative
     };
     onBtnPos() {
-        console.log('click pos');
         this.serialWrite('M114');
     };
     onBtnRel() {
@@ -112,7 +110,6 @@ export class Marlin extends Device {
     onBtnCold() {
         this.serialWrite('M302 S0');
     };
-
 
     onBtnXP() {
         this.serialWrite('G0 X10');
