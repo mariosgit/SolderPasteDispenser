@@ -82,7 +82,7 @@ export class Device {
     async serialConnect() {
         // opens dialog where user can select a device
         this.port = await navigator.serial.requestPort();
-        await this.port.open({ baudRate: 115200 }).then((val) => {
+        await this.port.open({ baudRate: 250000 }).then((val) => {
             console.log('port opened ? ', this.port);
             if(this.deviceLog) {
                 this.deviceLog.innerHTML = "connected<br>";
@@ -154,8 +154,11 @@ export class Device {
             }
         }
     }
-    serialWrite() {
-        const writer: WritableStream = this.port.writable.getWriter();
+    async serialWrite(value:string) {
+        let utf8Encode = new TextEncoder();
+        const writer = this.port.writable.getWriter();
+        await writer.write(utf8Encode.encode(`${value}\n`));
+        writer.releaseLock();
     }
     async serialDisconnect() {
         if (this.port) {
