@@ -33,8 +33,6 @@ const reMatchPadCoord = /^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/;
 let device = new Marlin();
 
 function init() {
-    console.log('moinsen');
-
     if (uploadButton && progressCancel && padsField && coordsField && body && canvas) {
         ctx = canvas.getContext("2d");
 

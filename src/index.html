@@ -29,9 +29,11 @@
     </div>
 
     <div class="w3-panel" id="debug">
+        <!-- Marlin -->
         <button onclick="globalThis.accordionToggler('Marlin')" class="w3-button w3-block w3-deep-orange w3-left-align">Marlin</button>
         <div id="Marlin" class="w3-show">
         </div>
+        <!-- Device -->
         <button onclick="globalThis.accordionToggler('Device')" class="w3-button w3-block w3-deep-orange w3-left-align">Device</button>
         <div id="Device" class="w3-show">
             <button id="deviceCheck" class="w3-button w3-grey w3-hide">check</button>
@@ -41,8 +43,10 @@
             <form id="deviceInputForm">
                 <input id="deviceInput" class="w3-input w3-border w3-grey w3-hover-light-grey" type="text">
             </form>
+            <div id="deviceInfo" class="w3-block">...</div>
             <div id="deviceLog" class="w3-block">...</div>
         </div>
+        <!-- Log -->
         <button onclick="globalThis.accordionToggler('Coors')" class="w3-button w3-block w3-deep-orange w3-left-align">Coords..</button>
         <div id="Coors" class="w3-hide">
             <h4>Pads</h4>
