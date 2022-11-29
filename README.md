@@ -48,3 +48,7 @@ Another handy motor driven dispenser https://github.com/koendv/paste_dispenser
 Marlin G-code reference https://marlinfw.org/meta/gcode/
 
 FontAwesome Icons https://fontawesome.com/search?q=syr&o=r&m=free
+
+KdTree from there https://github.com/ubilabs/kd-tree-javascript
+
+Grid and Mouse originated from there https://github.com/CodeDraken/canvas-coords

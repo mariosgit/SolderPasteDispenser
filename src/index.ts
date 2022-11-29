@@ -133,6 +133,10 @@ function init() {
         mouse = new Mouse(ctx, canvas);
         mouse.track();
         grid = new Grid();
+        grid.step = 1;
+        grid.lineWidth = 0.03;
+        grid.boldWidth = 0.05;
+        grid.createLines(canvas);
 
         globalThis.resize();
 
@@ -148,13 +152,22 @@ function update() {
         window.requestAnimationFrame(update);
 
         ctx.setTransform(
+            pcb?pcb.zoom:1, 0,
+            0, pcb?pcb.zoom:1,
+            0, 0);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // grid.draw(ctx, canvas);
+        // grid.step = pcb?10.0/pcb.zoom:10.0;
+        // grid.createLines(canvas);
+        grid.lines.forEach(line => line.draw(ctx))
+        mouse.draw();
+
+
+        ctx.setTransform(
             1, 0,
             0, -1,
             0, canvas.height);
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        grid.draw(ctx, canvas);
-        mouse.draw();
 
         // ctx.scale(1,-1); // flip display y
 
@@ -186,7 +199,7 @@ async function processGerberText(text: string) {
 
         progress.style.display = 'block';
 
-        pcb = new PCB(ctx, canvas);
+        pcb = new PCB(ctx, canvas, device);
 
         // console.log(text);
         // translate line ends...
@@ -350,7 +363,7 @@ globalThis.accordionToggler = (id: string) => {
 }
 
 globalThis.openSidebar = () => {
-    if(main && debug && openSidebarButton) {
+    if (main && debug && openSidebarButton) {
         main.style.marginRight = "350px";
         debug.style.width = "350px";
         debug.style.display = "block";
@@ -359,7 +372,7 @@ globalThis.openSidebar = () => {
 }
 
 globalThis.closeSidebar = () => {
-    if(main && debug && openSidebarButton) {
+    if (main && debug && openSidebarButton) {
         main.style.marginRight = "0px";
         debug.style.display = "none";
         openSidebarButton.style.display = "inline-block";
@@ -383,7 +396,7 @@ globalThis.resize = () => {
         // height of all other elements in debug
         let height = 0;
         for (let child of debug.children) {
-            let elem:HTMLElement = <HTMLElement>child;
+            let elem: HTMLElement = <HTMLElement>child;
             console.log(`resize:   ${child.id} ${elem.clientHeight}`);
             height += elem.clientHeight;
         }

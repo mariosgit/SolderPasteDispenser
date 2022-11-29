@@ -57,7 +57,7 @@ export class PCB {
     mouseOffX: number = 0;
     mouseOffY: number = 0;
 
-    zoom: number = 6.0;
+    zoom: number = 5.0;
     bb: BoundingBox;
 
     tree: any;
@@ -193,43 +193,50 @@ export class PCB {
     mouseDown(event: MouseEvent) {
         // console.event.buttons
         const trans = this.ctx.getTransform();
-        console.log(trans);
-        this.mouseStartX = event.clientX * trans.a - this.mouseOffX;
-        this.mouseStartY = event.clientY * trans.d - this.mouseOffY;
-        this.mouseFlag = true;
+        if(event.button != 0) {
+            this.mouseStartX = event.clientX * trans.a - this.mouseOffX;
+            this.mouseStartY = event.clientY * trans.d - this.mouseOffY;
+            this.mouseFlag = true;
+        }
     }
     mouseUp(event: MouseEvent) {
         this.mouseFlag = false;
 
         console.log('pcb:mouseUp button:', event.button);
-        if(event.button == 0) {
+        if(event.button != 0) {
             const trans = this.ctx.getTransform();
             console.log(trans, event);
             console.log('', this.canvas.height-(event.clientY-this.canvas.offsetTop), this.mouseOffY);
             const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
             const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
             if(this.tree) {
-                this.nearest = this.tree.nearest({ posX: mx, posY: my }, 1);
+                this.nearest = this.tree.nearest({ posX: mx, posY: my }, 1); // can supply 3rd param maxDistance :)
                 for(const near of this.nearest) {
                     console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
                 }
+                // this.device.onSelection() ???
             }
-
         }
     }
     mouseMove(event: MouseEvent) {
+        // console.log('pcb:mouseMove',event);
         const trans = this.ctx.getTransform();
-        if (this.mouseFlag) {
+        if(this.mouseFlag ) {
             this.mouseOffX = event.clientX * trans.a - this.mouseStartX;
             this.mouseOffY = event.clientY * trans.d - this.mouseStartY;
         }
     }
     mouseWheel(event: WheelEvent) {
+        const trans = this.ctx.getTransform();
         // console.log(event.deltaY);
         if (event.deltaY > 0) {
             this.zoom *= 1.1;
+            // this.mouseOffX *= 0.9;
+            // this.mouseOffY *= 0.9;
         } else {
             this.zoom *= 0.9;
+            // this.mouseOffX *= 1.1;
+            // this.mouseOffY *= 1.1;
         }
     }
     mouseOut(event: MouseEvent) {
