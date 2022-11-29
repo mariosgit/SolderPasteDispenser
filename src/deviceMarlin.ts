@@ -16,6 +16,7 @@ export class Marlin extends Device {
     marlinDivStatus: HTMLElement | null;
     marlinDivPosition: HTMLElement | null;
     marlinDivCommands: HTMLElement | null;
+    marlinDivContextMenu: HTMLElement | null;
     constructor() {
         super();
         this.marlinDiv = document.getElementById("Marlin");
@@ -53,6 +54,22 @@ export class Marlin extends Device {
         if (this.marlinDivStatus && this.marlinDivCommands) {
             this.setStatus(Status.NC);
             this.marlinDivCommands.className = this.marlinDivCommands.className.replace('w3-show', 'w3-hide');
+        }
+    }
+
+    public onContextMenu(ev: PointerEvent) {
+        console.log('Marlin: onContextMenu', ev);
+
+        if(this.marlinDivContextMenu) {
+            this.marlinDivContextMenu.style.left = `${ev.pageX}px`;
+            this.marlinDivContextMenu.style.top = `${ev.pageY}px`;
+            this.marlinDivContextMenu.style.display = 'block';
+        }
+    }
+    public onMouseUp(ev: MouseEvent) {
+        console.log('Marlin: onMouseUp', ev)
+        if(this.marlinDivContextMenu) {
+            this.marlinDivContextMenu.style.display = 'none';
         }
     }
 
@@ -189,6 +206,12 @@ export class Marlin extends Device {
     private initHtml() {
         if (this.marlinDiv) {
             this.marlinDiv.innerHTML = `
+            <div id="marlinContextMenu" class="w3-modal w3-container w3-blue-grey">
+                Menu
+                <button id="marlinSetZero" class="w3-button w3-block w3-light-grey">set zero</button>
+                <button id="marlinMoveTo" class="w3-button w3-block w3-light-grey">move to</button>
+            </div>
+            <div class="w3-border w3-border-dark-grey">
             <div id="marlinStatus"></div>
             <div id="marlinPosition" class="w3-tiny"></div>
             <div id="marlinCommands" class="w3-hide">
@@ -207,10 +230,21 @@ export class Marlin extends Device {
             <button id="marlinEP" class="w3-button w3-light-grey">e+</button>
             <button id="marlinEM" class="w3-button w3-light-grey">e-</button>
             </div>
+            </div>
             `
             this.marlinDivStatus = document.getElementById("marlinStatus");
             this.marlinDivPosition = document.getElementById("marlinPosition");
             this.marlinDivCommands = document.getElementById("marlinCommands");
+            this.marlinDivContextMenu = document.getElementById("marlinContextMenu");
+            if(this.marlinDivContextMenu) {
+                this.marlinDivContextMenu.style.display = 'none';
+                this.marlinDivContextMenu.style.position = 'fixed';
+                this.marlinDivContextMenu.style.zIndex = '100';
+                this.marlinDivContextMenu.style.width = '200px';
+                this.marlinDivContextMenu.style.height = '10%';
+                this.marlinDivContextMenu.style.overflowY = 'hidden';
+
+            }
             this.setStatus(Status.NC);
             const marlinBtnHome = document.getElementById("marlinHome");
             if (marlinBtnHome) {

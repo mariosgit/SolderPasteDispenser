@@ -65,13 +65,25 @@ export class Device {
         console.log('Device: onSerialDisconnected')
     }
 
+    public onContextMenu(ev: MouseEvent) {
+        console.log('Device: onContextMenu')
+    }
+    public onMouseUp(ev: MouseEvent) {
+        console.log('Device: onMouseUp')
+    }
+
     /**
      * Opens a dialog where user can select a device to connect.
      */
     public async serialConnect() {
         // opens dialog where user can select a device
-        const port = await navigator.serial.requestPort();
-        this.serialPortOpen(port);
+        navigator.serial.requestPort().then((port) => {
+            console.log('serialConnect',port);
+            this.serialPortOpen(port);
+        }).catch((reason) => {
+            // console.warn('serialConnect',reason);
+            this.serialError(reason);
+        });
     }
 
     public async serialConnectDevice(vid: number, pid: number) {
@@ -191,7 +203,7 @@ export class Device {
             });
             result = true;
         } else {
-            console.warn('No serial API available, try another browser');
+            // console.warn('No serial API available, try another browser');
             this.serialError("This browser does not support the serial port. Connection to device impossible! Use Chrome!");
         }
         return result;
@@ -200,6 +212,7 @@ export class Device {
     private updatePorts() {
         // lists all recently used ports, could just open one then.
         navigator.serial.getPorts().then((ports) => {
+            console.log('updatePorts:', ports);
             this.ports = ports;
             let html = '';//devices:<br>';
             for (let port of ports) {
@@ -215,8 +228,9 @@ export class Device {
                     btn.onclick = () => { const ids = btn.id.split('-'); console.log(ids); this.serialConnectDevice(parseInt(ids[0]), parseInt(ids[1])) };
                 }
             }
-            if (this.deviceConnect && this.ports.length == 0) {
-                this.deviceConnect.className.replace('w3-hide', 'w3-show');
+            if (this.deviceConnect && (this.ports == null || this.ports.length == 0)) {
+                // console.log('updatePorts: open dev buttons!!!', this.deviceConnect.className);
+                this.deviceConnect.className = this.deviceConnect.className.replace('w3-hide', 'w3-show');
             }
         });
     }
@@ -225,7 +239,7 @@ export class Device {
      * Opens a givven port. Can be used after queriing ports with updatePorts.
      * @param port
      */
-    private async serialPortOpen(port: any) {
+    private serialPortOpen(port: any) {
         port.onconnect = () => {
             console.log(`CONNECTED`);
             // this.onSerialConnected(); // signal derived class // tut nix :(
@@ -234,7 +248,7 @@ export class Device {
             console.log(`DISCONNECTED`);
             this.onSerialDisconnected();
         };
-        await port.open({ baudRate: 250000 }).then((val) => {
+        port.open({ baudRate: 250000 }).then((val) => {
             this.port = port;
             if (this.deviceLog) {
                 this.deviceLog.innerHTML = "connected<br>";
@@ -244,7 +258,7 @@ export class Device {
 
             setTimeout(this.serialRead.bind(this), 0); // start read loop
         }).catch((error) => {
-            console.warn(error);
+            // console.warn(error);
             this.serialError(error.toString());
         });
     }
@@ -252,7 +266,7 @@ export class Device {
     protected serialError(error: string) {
         console.warn('serialError', error);
         if (this.deviceLog) {
-            this.deviceLog.innerHTML += `<span class="w3-red">${error}</span>`
+            this.deviceLog.innerHTML = `<span class="w3-red">${error}</span><br>`
         }
     }
 
@@ -364,6 +378,7 @@ export class Device {
             } else {
                 this.deviceSerial.innerHTML += `<div><i class="fa-solid fa-arrow-up-right-from-square"></i> ${text}</div>`;
             }
+            globalThis.resize();
         }
     }
 }

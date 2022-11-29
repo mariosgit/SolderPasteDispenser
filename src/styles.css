@@ -2,6 +2,13 @@ h1 {
     color: orangered;
 }
 
+#openSidebar {
+    background-color: grey;
+    position: absolute;
+    right: 0px;
+    top: 16px;
+}
+
 #canvas {
     background: grey;
     padding: 0;
@@ -11,14 +18,18 @@ h1 {
 }
 
 #debug {
-    background: rgba(128, 128, 128, 0.445);
+    background-color: rgba(128, 128, 128, 0.745);
     position: absolute;
     top: 0px;
     right: 0px;
     width: 350px;
-    height: 90%;
-    overflow-y: scroll;
+    /* height: 90%; */
     padding: 0px;
+}
+
+#Coords {
+    /* background-color: aqua; */
+    overflow-y: scroll;
 }
 
 #progress {
@@ -28,4 +39,5 @@ h1 {
     width: 80%;
     /* height: 50px; */
     display: none;
+    z-index: 20;
 }

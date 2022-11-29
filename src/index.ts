@@ -6,6 +6,7 @@ import { PCB } from './pcb';
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
+const coords: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("Coords");
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
 const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
@@ -13,6 +14,9 @@ const debug: HTMLDivElement | null = <HTMLDivElement | null>document.getElementB
 const progress: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("progress");
 const progressbar: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById('progressbar');
 const progressCancel: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById('progressCancel');
+
+const main: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("main");
+const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("openSidebar");
 
 const header = document.getElementsByTagName('header')[0];
 const footer = document.getElementsByTagName('footer')[0];
@@ -50,7 +54,7 @@ function init() {
             event.preventDefault();
         }, false);
         canvas.addEventListener("mouseout", (event) => {
-            if (pcb) pcb.mouseUp(event);
+            if (pcb) pcb.mouseOut(event);
             event.preventDefault();
         }, false);
         canvas.addEventListener("wheel", (event) => {
@@ -114,6 +118,14 @@ function init() {
             // Prevent default behavior (Prevent file from being opened)
             ev.preventDefault();
         }
+        body.oncontextmenu = (ev) => {
+            // console.log('oncontextmenu',ev);
+            ev.preventDefault();
+            device.onContextMenu(ev);
+        }
+        body.onmouseup = (ev) => {
+            device.onMouseUp(ev);
+        }
 
         canvas.width = innerWidth;
         canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
@@ -122,7 +134,7 @@ function init() {
         mouse.track();
         grid = new Grid();
 
-        resize();
+        globalThis.resize();
 
         window.requestAnimationFrame(update);
     }
@@ -334,21 +346,58 @@ globalThis.accordionToggler = (id: string) => {
     } else {
         console.warn('accordionToggler no elem with id:', id);
     }
+    globalThis.resize();
 }
 
-function resize() {
-    if (canvas && header && footer && debug) {
+globalThis.openSidebar = () => {
+    if(main && debug && openSidebarButton) {
+        main.style.marginRight = "350px";
+        debug.style.width = "350px";
+        debug.style.display = "block";
+        openSidebarButton.style.display = 'none';
+    }
+}
+
+globalThis.closeSidebar = () => {
+    if(main && debug && openSidebarButton) {
+        main.style.marginRight = "0px";
+        debug.style.display = "none";
+        openSidebarButton.style.display = "inline-block";
+    }
+}
+
+globalThis.resize = () => {
+    if (canvas && header && footer && debug && coords) {
         canvas.width = innerWidth;
-        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 6;
         mouse.draw();
         grid.draw(ctx, canvas);
 
-        debug.style.height = `${canvas.height + header.getBoundingClientRect().height - 16}px`; // 16 is marginTop
+        // height of debug is innerHeight - margin top/bottom more or less - footer.height
+        // console.log('resize: margin', debug.getBoundingClientRect().top);
+        let dheight = innerHeight - footer.getBoundingClientRect().height; // canvas.height + header.getBoundingClientRect().height - 16;
+        debug.style.height = `${dheight}px`; // 16 is marginTop
+        console.log('resize: inner height', innerHeight);
+        console.log('resize: debug height', dheight);
+
+        // height of all other elements in debug
+        let height = 0;
+        for (let child of debug.children) {
+            let elem:HTMLElement = <HTMLElement>child;
+            console.log(`resize:   ${child.id} ${elem.clientHeight}`);
+            height += elem.clientHeight;
+        }
+        height -= coords.getBoundingClientRect().height;
+        console.log('resize: debug content height', height);
+
+        // coords can take the rest of the space
+        coords.style.height = `${dheight - height - 16}px`;
+
     }
 }
 document.addEventListener('DOMContentLoaded', init);
 
 window.addEventListener('resize', (val) => {
     console.log(`resize: ${val}`);
-    resize();
+    globalThis.resize();
 })

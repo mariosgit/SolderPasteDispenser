@@ -183,14 +183,15 @@ export class PCB {
                     pads.push(pad);
                 }
             }
-            
+
             this.tree = new kdTree(pads, PCB.distance, ["posX", "posY"]);
             console.log('tree bf:', this.tree.balanceFactor());
-    
+
         } catch(err) { console.error(err); }
     }
 
     mouseDown(event: MouseEvent) {
+        // console.event.buttons
         const trans = this.ctx.getTransform();
         console.log(trans);
         this.mouseStartX = event.clientX * trans.a - this.mouseOffX;
@@ -200,16 +201,20 @@ export class PCB {
     mouseUp(event: MouseEvent) {
         this.mouseFlag = false;
 
-        const trans = this.ctx.getTransform();
-        console.log(trans, event);
-        console.log('', this.canvas.height-(event.clientY-this.canvas.offsetTop), this.mouseOffY);
-        const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
-        const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
-        if(this.tree) {
-            this.nearest = this.tree.nearest({ posX: mx, posY: my }, 1);
-            for(const near of this.nearest) {
-                console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
+        console.log('pcb:mouseUp button:', event.button);
+        if(event.button == 0) {
+            const trans = this.ctx.getTransform();
+            console.log(trans, event);
+            console.log('', this.canvas.height-(event.clientY-this.canvas.offsetTop), this.mouseOffY);
+            const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
+            const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
+            if(this.tree) {
+                this.nearest = this.tree.nearest({ posX: mx, posY: my }, 1);
+                for(const near of this.nearest) {
+                    console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
+                }
             }
+
         }
     }
     mouseMove(event: MouseEvent) {
@@ -226,6 +231,8 @@ export class PCB {
         } else {
             this.zoom *= 0.9;
         }
+    }
+    mouseOut(event: MouseEvent) {
     }
 
     static distance(a:Pad, b:Pad) {
