@@ -4,10 +4,18 @@
 
 import { Device } from "./device";
 
+enum Status {
+    Undefined = 1,
+    Ready,
+    Busy,
+    NC
+}
+
 export class Marlin extends Device {
     marlinDiv: HTMLElement | null;
     marlinDivStatus: HTMLElement | null;
     marlinDivPosition: HTMLElement | null;
+    marlinDivCommands: HTMLElement | null;
     constructor() {
         super();
         this.marlinDiv = document.getElementById("Marlin");
@@ -22,15 +30,29 @@ export class Marlin extends Device {
         //             this.marlinDivPosition.innerHTML += `${this.inputQueue.pop()}`;
         //         }
         //     }
-        //     if (this.marlinDivStatus) {
-        //         this.marlinDivStatus.innerHTML = 'Status: <span class="w3-badge w3-grey">👍</span> ready';
-        //     }
+        this.setStatus(Status.Ready)
+        if (this.marlinDivStatus && this.marlinDivCommands) {
+            this.setStatus(Status.Ready);
+            this.marlinDivCommands.className = this.marlinDivCommands.className.replace('w3-hide', 'w3-show');
+        }
         // }, 1000);
+
+        // wait 3sec, run commands 'cold extrude','relative positioning','report position'
+        setTimeout(() => {
+            this.onBtnCold().then(() => {
+                this.onBtnRel().then(() => {
+                    this.onBtnPos().then(() => {
+                        console.log('Marlin: onSerialConnected init sequence finished');
+                    });
+                });
+            });
+        }, 3000);
     }
     protected onSerialDisconnected() {
         console.log('Marlin: onSerialDisconnected');
-        if (this.marlinDivStatus) {
-            this.marlinDivStatus.innerHTML = 'Status: <span class="w3-badge w3-grey">👎</span> disconnected';
+        if (this.marlinDivStatus && this.marlinDivCommands) {
+            this.setStatus(Status.NC);
+            this.marlinDivCommands.className = this.marlinDivCommands.className.replace('w3-show', 'w3-hide');
         }
     }
 
@@ -42,70 +64,123 @@ export class Marlin extends Device {
      */
     public async serialWriteWait(value: string, timeout: number = 10000): Promise<string> {
         return new Promise<string>(async (resolve, reject) => {
-            if (this.marlinDivStatus) {
-                this.marlinDivStatus.innerHTML = 'Status: <span class="w3-badge w3-grey">🎉</span> busy';
-            }
+            this.setStatus(Status.Busy);
             super.serialWriteWait(value, timeout).then((result) => {
                 resolve(result);
             }).catch((reason) => {
                 reject(reason);
             }).finally(() => {
-                if (this.marlinDivStatus) {
-                    this.marlinDivStatus.innerHTML = 'Status: <span class="w3-badge w3-grey">👍</span> ready';
-                }
+                this.setStatus(Status.Ready);
             });
         });
     }
-    onBtnHome() {
-        // timeout too small for this command, see what happens
-        this.serialWriteWait('G28', 100).then((value) => {
-            console.log(value);
-        }).catch((reason) => {
-            console.warn(reason);
-            // try again (default timeout is 10sec)
+
+    private setStatus(status: Status) {
+        let html = `unknown status ${status}`;
+        switch (status) {
+            case Status.Ready:
+                html = 'Status: <i class="fa-solid fa-plug"></i> ready'; break;
+            case Status.Busy:
+                html = 'Status: <i class="fa-solid fa-plug-circle-bolt"></i> busy'; break;
+            case Status.NC:
+                html = 'Status: <i class="fa-solid fa-plug-circle-xmark"></i> not connected'; break;
+        }
+        if (this.marlinDivStatus) {
+            this.marlinDivStatus.innerHTML = html;
+        }
+    }
+
+    onBtnHome(): Promise<void> {
+        return new Promise<void>((resolve) => {
             this.serialWriteWait('G28').then((value) => {
                 console.log(value);
-                this.onBtnPos();
-            }).catch((reason) => { console.warn(reason) });
+            }).catch((reason) => {
+                console.warn(reason)
+            }).finally(() => {
+                resolve();
+            });
+        });
+
+        //// timeout too small for this command, see what happens
+        // this.serialWriteWait('G28', 100).then((value) => {
+        //     console.log(value);
+        // }).catch((reason) => {
+        //     console.warn(reason);
+        //     // try again (default timeout is 10sec)
+        //     this.serialWriteWait('G28').then((value) => {
+        //         console.log(value);
+        //         this.onBtnPos();
+        //     }).catch((reason) => { console.warn(reason) });
+        // });
+    };
+    onBtnPos(): Promise<void> {
+        return new Promise<void>((resolve) => {
+            this.serialWriteWait('M114').then((value) => {
+                console.log(value);
+                if (this.marlinDivPosition) {
+                    this.marlinDivPosition.innerText = value;
+                }
+            }).catch((reason) => {
+                console.warn(reason);
+            }).finally(() => {
+                resolve();
+            });
         });
     };
-    onBtnPos() {
-        this.serialWriteWait('M114').then((value) => {
-            console.log(value);
-            if (this.marlinDivPosition) {
-                this.marlinDivPosition.innerText = value;
-            }
-        }).catch((reason) => {
-            console.warn(reason);
+    onBtnAbs() {
+        return new Promise<void>((resolve) => {
+            this.serialWriteWait('G90').then((value) => {
+                console.log(value);
+            }).catch((reason) => {
+                console.warn(reason);
+            }).finally(() => {
+                resolve();
+            });
         });
-    };
+    }
     onBtnRel() {
-        this.serialWriteWait('G91');
-    };
+        return new Promise<void>((resolve) => {
+            this.serialWriteWait('G91').then((value) => {
+                console.log(value);
+            }).catch((reason) => {
+                console.warn(reason);
+            }).finally(() => {
+                resolve();
+            });
+        });
+    }
     onBtnCold() {
-        this.serialWriteWait('M302 S0');
-    };
+        return new Promise<void>((resolve) => {
+            this.serialWriteWait('M302 S0').then((value) => {
+                console.log(value);
+            }).catch((reason) => {
+                console.warn(reason);
+            }).finally(() => {
+                resolve();
+            });
+        });
+    }
 
     onBtnXP() {
-        this.serialWriteWait('G0 X10').then((value) =>  { this.onBtnPos(); });
+        this.serialWriteWait('G0 X10').then((value) => { this.onBtnPos(); });
     };
     onBtnXM() {
         this.serialWriteWait('G0 X-10').then((value) => { this.onBtnPos(); });
     };
     onBtnYP() {
-        this.serialWriteWait('G0 Y10').then((value) =>  { this.onBtnPos(); });
+        this.serialWriteWait('G0 Y10').then((value) => { this.onBtnPos(); });
     };
     onBtnYM() {
         this.serialWriteWait('G0 Y-10').then((value) => { this.onBtnPos(); });
     };
     onBtnZP() {
-        this.serialWriteWait('G0 Z10').then((value) =>  { this.onBtnPos(); });
+        this.serialWriteWait('G0 Z10').then((value) => { this.onBtnPos(); });
     };
     onBtnZM() {
         this.serialWriteWait('G0 Z-10').then((value) => { this.onBtnPos(); });
     };
     onBtnEP() {
-        this.serialWriteWait('G0 E10').then((value) =>  { this.onBtnPos(); });
+        this.serialWriteWait('G0 E10').then((value) => { this.onBtnPos(); });
     };
     onBtnEM() {
         this.serialWriteWait('G0 E-10').then((value) => { this.onBtnPos(); });
@@ -116,27 +191,27 @@ export class Marlin extends Device {
             this.marlinDiv.innerHTML = `
             <div id="marlinStatus"></div>
             <div id="marlinPosition" class="w3-tiny"></div>
-            <div >
-            <button id="marlinHome" class="w3-button w3-grey">home</button>
-            <button id="marlinPos" class="w3-button w3-grey">pos?</button>
-            <button id="marlinRel" class="w3-button w3-grey">rel</button>
-            <button id="marlinCold" class="w3-button w3-grey">cold</button>
+            <div id="marlinCommands" class="w3-hide">
+            <button id="marlinHome" class="w3-button w3-light-grey">home</button>
+            <button id="marlinPos" class="w3-button w3-light-grey">pos?</button>
+            <button id="marlinRel" class="w3-button w3-light-grey">rel</button>
+            <button id="marlinAbs" class="w3-button w3-light-grey">abs</button>
+            <button id="marlinCold" class="w3-button w3-light-grey">cold</button>
             <br>
-            <button id="marlinXP" class="w3-button w3-grey">x+</button>
-            <button id="marlinXM" class="w3-button w3-grey">x-</button>
-            <button id="marlinYP" class="w3-button w3-grey">y+</button>
-            <button id="marlinYM" class="w3-button w3-grey">y-</button>
-            <button id="marlinZP" class="w3-button w3-grey">z+</button>
-            <button id="marlinZM" class="w3-button w3-grey">z-</button>
-            <button id="marlinEP" class="w3-button w3-grey">e+</button>
-            <button id="marlinEM" class="w3-button w3-grey">e-</button>
+            <button id="marlinXP" class="w3-button w3-light-grey">x+</button>
+            <button id="marlinXM" class="w3-button w3-light-grey">x-</button>
+            <button id="marlinYP" class="w3-button w3-light-grey">y+</button>
+            <button id="marlinYM" class="w3-button w3-light-grey">y-</button>
+            <button id="marlinZP" class="w3-button w3-light-grey">z+</button>
+            <button id="marlinZM" class="w3-button w3-light-grey">z-</button>
+            <button id="marlinEP" class="w3-button w3-light-grey">e+</button>
+            <button id="marlinEM" class="w3-button w3-light-grey">e-</button>
             </div>
             `
             this.marlinDivStatus = document.getElementById("marlinStatus");
             this.marlinDivPosition = document.getElementById("marlinPosition");
-            if (this.marlinDivStatus) {
-                this.marlinDivStatus.innerHTML = 'Status: <span class="w3-badge w3-grey">💭</span> not connected';
-            }
+            this.marlinDivCommands = document.getElementById("marlinCommands");
+            this.setStatus(Status.NC);
             const marlinBtnHome = document.getElementById("marlinHome");
             if (marlinBtnHome) {
                 marlinBtnHome.onclick = this.onBtnHome.bind(this);
@@ -148,6 +223,10 @@ export class Marlin extends Device {
             const marlinBtnRel = document.getElementById("marlinRel");
             if (marlinBtnRel) {
                 marlinBtnRel.onclick = this.onBtnRel.bind(this);
+            }
+            const marlinBtnAbs = document.getElementById("marlinAbs");
+            if (marlinBtnAbs) {
+                marlinBtnAbs.onclick = this.onBtnAbs.bind(this);
             }
             const marlinBtnCold = document.getElementById("marlinCold");
             if (marlinBtnCold) {

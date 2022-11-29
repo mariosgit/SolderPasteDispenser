@@ -19,6 +19,7 @@ export class Device {
     deviceInputForm: HTMLFormElement | null;
     deviceInfo: HTMLDivElement | null;
     deviceLog: HTMLDivElement | null;
+    deviceSerial: HTMLDivElement | null;
     ports: any;
     port: any;
     textDecoder: TextDecoderStream;
@@ -36,6 +37,7 @@ export class Device {
         this.deviceInputForm = <HTMLFormElement | null>document.getElementById("deviceInputForm");
         this.deviceInfo = <HTMLDivElement | null>document.getElementById("deviceInfo");
         this.deviceLog = <HTMLDivElement | null>document.getElementById("deviceLog");
+        this.deviceSerial = <HTMLDivElement | null>document.getElementById("deviceSerial");
         this.port = null;
         this.textDecoder = new TextDecoderStream();
         if (this.deviceCheck && this.deviceConnect && this.deviceDisconnect && this.deviceDosome && this.deviceInput && this.deviceInputForm) {
@@ -74,7 +76,7 @@ export class Device {
 
     public async serialConnectDevice(vid: number, pid: number) {
         for (let port of this.ports) {
-            console.log(`serial available, ports: `, port.getInfo());
+            console.log(`serialConnectDevice: serial available, ports: `, port.getInfo());
             const { usbProductId, usbVendorId } = port.getInfo();
             if (usbProductId == pid && usbVendorId == vid) {
                 this.serialPortOpen(port);
@@ -105,14 +107,9 @@ export class Device {
         // clean serial input
         this.inputQueue = [];
         return new Promise<string>(async (resolve, reject) => {
-            if(this.port) {
+            if (this.port) {
                 try {
-                    // write...
-                    let utf8Encode = new TextEncoder();
-                    const writer = this.port.writable.getWriter();
-                    await writer.write(utf8Encode.encode(`${value}\n`));
-                    writer.releaseLock();
-
+                    this.serialWrite(value);
                     // wait until some response or timeout
                     let available = false;
                     const timestep = 10;
@@ -168,10 +165,7 @@ export class Device {
             if (this.port) {
                 let text = this.deviceInput.value;
                 if (text.length > 0) {
-                    let utf8Encode = new TextEncoder();
-                    const writer = this.port.writable.getWriter();
-                    await writer.write(utf8Encode.encode(`${text}\n`));
-                    writer.releaseLock();
+                    this.serialWrite(text);
                 }
             } else {
                 console.warn('serialInputChange - no port open');
@@ -187,19 +181,18 @@ export class Device {
             this.updatePorts();
             navigator.serial.addEventListener("connect", (event) => {
                 // TODO: Automatically open event.target or warn user a port is available.
-                console.log(event);
+                console.log('serialCheck:connect', event);
                 this.updatePorts();
-                this.onSerialConnected();
             });
             navigator.serial.addEventListener("disconnect", (event) => {
                 // TODO: Remove |event.target| from the UI.
                 // If the serial port was opened, a stream error would be observed as well.
-                console.log(event);
-                this.onSerialDisconnected();
+                console.log('serialCheck:disconnect', event);
             });
             result = true;
         } else {
-            console.warn('No serial API available, try onother browser');
+            console.warn('No serial API available, try another browser');
+            this.serialError("This browser does not support the serial port. Connection to device impossible! Use Chrome!");
         }
         return result;
     }
@@ -208,19 +201,22 @@ export class Device {
         // lists all recently used ports, could just open one then.
         navigator.serial.getPorts().then((ports) => {
             this.ports = ports;
-            let html = 'devices:<br>';
+            let html = '';//devices:<br>';
             for (let port of ports) {
                 console.log(`serial available, ports: `, port.getInfo());
                 const { usbProductId, usbVendorId } = port.getInfo();
                 console.log(`updatePorts port pid:${usbProductId} vid:${usbVendorId}`);
-                html += `pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-grey w3-tiny" id="${usbVendorId}-${usbProductId}">connect</button>`;
+                html += `<div class="w3-container"><i class="fa-solid fa-microchip"></i> pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-light-grey w3-tiny" id="${usbVendorId}-${usbProductId}"><i class="fa fa-plug"></i> connect </button></div>`;
             }
             if (this.deviceInfo) {
                 this.deviceInfo.innerHTML = html;
                 const btns = this.deviceInfo.getElementsByTagName('button');
                 for (const btn of btns) {
-                    btn.onclick = () => { const ids = btn.id.split('-'); console.log(ids); this.serialConnectDevice(ids[0], ids[1]) };
+                    btn.onclick = () => { const ids = btn.id.split('-'); console.log(ids); this.serialConnectDevice(parseInt(ids[0]), parseInt(ids[1])) };
                 }
+            }
+            if (this.deviceConnect && this.ports.length == 0) {
+                this.deviceConnect.className.replace('w3-hide', 'w3-show');
             }
         });
     }
@@ -230,23 +226,31 @@ export class Device {
      * @param port
      */
     private async serialPortOpen(port: any) {
+        port.onconnect = () => {
+            console.log(`CONNECTED`);
+            // this.onSerialConnected(); // signal derived class // tut nix :(
+        };
+        port.ondisconnect = () => {
+            console.log(`DISCONNECTED`);
+            this.onSerialDisconnected();
+        };
         await port.open({ baudRate: 250000 }).then((val) => {
             this.port = port;
-            console.log('port opened ? ', this.port);
             if (this.deviceLog) {
                 this.deviceLog.innerHTML = "connected<br>";
             }
-            this.port.onconnect = () => { console.log(`CONNECTED`); };
-            this.port.ondisconnect = () => { console.log(`DISCONNECTED`); this.onSerialDisconnected(); };
+            console.log('port opened ? ', this.port);
+            this.onSerialConnected();
+
             setTimeout(this.serialRead.bind(this), 0); // start read loop
-            this.onSerialConnected(); // signal derived class
         }).catch((error) => {
             console.warn(error);
             this.serialError(error.toString());
         });
     }
 
-    private serialError(error: string) {
+    protected serialError(error: string) {
+        console.warn('serialError', error);
         if (this.deviceLog) {
             this.deviceLog.innerHTML += `<span class="w3-red">${error}</span>`
         }
@@ -286,6 +290,7 @@ export class Device {
                     for (let i = 0; i < values.length - 1; i++) {
                         this.inputLast += values[i];
                         this.inputQueue.push(this.inputLast);
+                        this.serialLog(this.inputLast, true);
                         this.inputLast = '';
                         pushedStuff = true;
                     }
@@ -320,6 +325,9 @@ export class Device {
     }
 
     private async serialWrite(value: string) {
+        this.serialLog(value, false);
+
+        // write...
         let utf8Encode = new TextEncoder();
         const writer = this.port.writable.getWriter();
         await writer.write(utf8Encode.encode(`${value}\n`));
@@ -343,5 +351,19 @@ export class Device {
         });
     }
 
-
+    private serialLog(text: string, incomming: boolean) {
+        if (this.deviceSerial) {
+            while(this.deviceSerial.childElementCount > 20) {
+                let ch = this.deviceSerial.firstChild;
+                if(ch) {
+                    this.deviceSerial.removeChild(ch);
+                }
+            }
+            if (incomming) {
+                this.deviceSerial.innerHTML += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> ${text}</div>`
+            } else {
+                this.deviceSerial.innerHTML += `<div><i class="fa-solid fa-arrow-up-right-from-square"></i> ${text}</div>`;
+            }
+        }
+    }
 }

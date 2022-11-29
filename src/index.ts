@@ -9,6 +9,7 @@ const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElem
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
 const dropZone: HTMLElement | null = document.getElementById("dropZone");
 const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getElementById("canvas");
+const debug: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("debug");
 const progress: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("progress");
 const progressbar: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById('progressbar');
 const progressCancel: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById('progressCancel');
@@ -120,6 +121,9 @@ function init() {
         mouse = new Mouse(ctx, canvas);
         mouse.track();
         grid = new Grid();
+
+        resize();
+
         window.requestAnimationFrame(update);
     }
     else {
@@ -332,14 +336,19 @@ globalThis.accordionToggler = (id: string) => {
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
-
-window.addEventListener('resize', (val) => {
-    console.log(`resize: ${val}`);
-    if (canvas && header && footer) {
+function resize() {
+    if (canvas && header && footer && debug) {
         canvas.width = innerWidth;
         canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
         mouse.draw();
         grid.draw(ctx, canvas);
+
+        debug.style.height = `${canvas.height + header.getBoundingClientRect().height - 16}px`; // 16 is marginTop
     }
+}
+document.addEventListener('DOMContentLoaded', init);
+
+window.addEventListener('resize', (val) => {
+    console.log(`resize: ${val}`);
+    resize();
 })

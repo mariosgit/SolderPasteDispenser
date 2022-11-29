@@ -15,9 +15,10 @@ h1 {
     position: absolute;
     top: 0px;
     right: 0px;
-    width: 35%;
+    width: 350px;
     height: 90%;
     overflow-y: scroll;
+    padding: 0px;
 }
 
 #progress {
