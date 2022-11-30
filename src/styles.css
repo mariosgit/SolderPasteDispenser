@@ -42,3 +42,11 @@ html {
     display: none;
     z-index: 20;
 }
+
+#contextMenu {
+    position: fixed;
+    z-index: 100;
+    width: 200px;
+    height: 10%;
+    overflow: hidden;
+}

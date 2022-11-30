@@ -1,7 +1,7 @@
 import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
 import { Device } from './device';
 import { Marlin } from './deviceMarlin';
-import { PCB } from './pcb';
+import { PCB, Pad, PadStyle } from './pcb';
 import { ParserGerber } from './parserGerber';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
@@ -14,7 +14,11 @@ const canvas: HTMLCanvasElement | null = <HTMLCanvasElement | null>document.getE
 const debug: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("debug");
 const progress: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("progress");
 const progressbar: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById('progressbar');
+const contextMenu: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById('contextMenu');
 const progressCancel: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById('progressCancel');
+
+const menuSetZero: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuSetZero");
+const menuMoveTo: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuMoveTo");
 
 const main: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("main");
 const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("openSidebar");
@@ -29,7 +33,7 @@ let pcb: PCB;
 let device = new Marlin();
 
 function init() {
-    if (uploadButton && progressCancel && padsField && coordsField && body && canvas) {
+    if (uploadButton && menuSetZero && menuMoveTo && progressCancel && padsField && coordsField && body && canvas && footer) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -75,6 +79,25 @@ function init() {
             return false;
         }
 
+        menuSetZero.onclick = () => {
+            device.setZero();
+        }
+
+        menuMoveTo.onclick = (event) => {
+            // console.log(event);
+            // find the coords !!!
+            // !!! need to be relative to zero !!! uuuhhh
+            let sel = pcb.getSelected();
+            if(sel.length > 0) {
+                // console.log(sel[0]);
+                if(sel[0].length > 0) {
+                    let pad:Pad = sel[0][0];
+                    console.log(pad);
+                    device.moveTo(pad.posX, pad.posY, undefined,undefined);
+                }
+            }
+        }
+
         body.ondrop = (ev) => {
             ev.preventDefault();
             console.log(ev);
@@ -109,11 +132,18 @@ function init() {
         body.oncontextmenu = (ev) => {
             // console.log('oncontextmenu',ev);
             ev.preventDefault();
-            device.onContextMenu(ev);
+            if( contextMenu) {
+                contextMenu.style.left = `${ev.pageX}px`;
+                contextMenu.style.top = `${ev.pageY}px`;
+                contextMenu.className = contextMenu.className.replace('w3-hide', 'w3-show');
+            }
         }
         body.onmouseup = (ev) => {
-            device.onMouseUp(ev);
+            if( contextMenu) {
+                contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
+            }
         }
+
 
         canvas.width = innerWidth;
         canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
@@ -124,7 +154,7 @@ function init() {
             mouse = new Mouse(ctx, canvas);
             mouse.track();
             grid = new Grid();
-            grid.step = 1;
+            grid.step = 2;
             grid.lineWidth = 0.03;
             grid.boldWidth = 0.05;
             grid.createLines(canvas);
@@ -242,18 +272,18 @@ globalThis.resize = () => {
         // console.log('resize: margin', debug.getBoundingClientRect().top);
         let dheight = innerHeight - footer.getBoundingClientRect().height; // canvas.height + header.getBoundingClientRect().height - 16;
         debug.style.height = `${dheight}px`; // 16 is marginTop
-        console.log('resize: inner height', innerHeight);
-        console.log('resize: debug height', dheight);
+        // console.log('resize: inner height', innerHeight);
+        // console.log('resize: debug height', dheight);
 
         // height of all other elements in debug
         let height = 0;
         for (let child of debug.children) {
             let elem: HTMLElement = <HTMLElement>child;
-            console.log(`resize:   ${child.id} ${elem.clientHeight}`);
+            // console.log(`resize:   ${child.id} ${elem.clientHeight}`);
             height += elem.clientHeight;
         }
         height -= coords.getBoundingClientRect().height;
-        console.log('resize: debug content height', height);
+        // console.log('resize: debug content height', height);
 
         // coords can take the rest of the space
         coords.style.height = `${dheight - height - 16}px`;

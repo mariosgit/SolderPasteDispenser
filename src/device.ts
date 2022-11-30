@@ -14,7 +14,6 @@ export class Device {
     deviceCheck: HTMLButtonElement | null;
     deviceConnect: HTMLButtonElement | null;
     deviceDisconnect: HTMLButtonElement | null;
-    deviceDosome: HTMLButtonElement | null;
     deviceInput: HTMLInputElement | null;
     deviceInputForm: HTMLFormElement | null;
     deviceInfo: HTMLDivElement | null;
@@ -32,7 +31,6 @@ export class Device {
         this.deviceCheck = <HTMLButtonElement | null>document.getElementById("deviceCheck");
         this.deviceConnect = <HTMLButtonElement | null>document.getElementById("deviceConnect");
         this.deviceDisconnect = <HTMLButtonElement | null>document.getElementById("deviceDisconnect");
-        this.deviceDosome = <HTMLButtonElement | null>document.getElementById("deviceDosome");
         this.deviceInput = <HTMLInputElement | null>document.getElementById("deviceInput");
         this.deviceInputForm = <HTMLFormElement | null>document.getElementById("deviceInputForm");
         this.deviceInfo = <HTMLDivElement | null>document.getElementById("deviceInfo");
@@ -51,32 +49,23 @@ export class Device {
         this.serialCheck();
     }
 
+    /**
+     * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
+     */
+    public setZero?(): void
+    /**
+     * Overwrite! Move to position. If one coordinate is undefined, it's ignored
+     */
+    public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void
 
     /**
      * Overwrite this in derived class to get notification when some device was connected.
      */
-    protected onSerialConnected() {
-        console.log('Device: onSerialConnected')
-    }
+    // protected onSerialConnected?():void;
     /**
      * Overwrite this in derived class to get notification when some device was disconnected.
      */
-    protected onSerialDisconnected() {
-        console.log('Device: onSerialDisconnected')
-    }
-
-    /**
-     * Overwrite this in derived class to get notification when context menu is requested.
-     */
-    public onContextMenu(ev: MouseEvent) {
-        console.log('Device: onContextMenu')
-    }
-    /**
-     * Overwrite this in derived class to get notification when mouseUp.
-     */
-    public onMouseUp(ev: MouseEvent) {
-        console.log('Device: onMouseUp')
-    }
+    // protected onSerialDisconnected?():void;
 
     /**
      * Opens a dialog where user can select a device to connect.

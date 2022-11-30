@@ -16,12 +16,34 @@ export class Marlin extends Device {
     marlinDivStatus: HTMLElement | null;
     marlinDivPosition: HTMLElement | null;
     marlinDivCommands: HTMLElement | null;
-    marlinDivContextMenu: HTMLElement | null;
     constructor() {
         super();
         this.marlinDiv = document.getElementById("Marlin");
         this.initHtml();
     }
+
+
+    /**
+     * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
+     */
+    public setZero(): void {
+        this.serialWriteWait('G92 X0 Y0 Z0').finally(() => {
+            this.onBtnPos();
+        });
+    }
+    /**
+     * Overwrite! Move to position. If one coordinate is undefined, it's ignored
+     */
+    public moveTo(x: number | undefined, y: number | undefined, z: number | undefined, e: number | undefined): void {
+        let cmd = 'G0 ';
+        if(x != undefined) cmd += `X${x} `;
+        if(y != undefined) cmd += `Y${y} `;
+        if(z != undefined) cmd += `Z${z} `;
+        this.serialWriteWait(cmd).finally(() => {
+            this.onBtnPos();
+        });
+    }
+
     protected onSerialConnected() {
         console.log('Marlin: onSerialConnected');
         // read over first messages
@@ -54,22 +76,6 @@ export class Marlin extends Device {
         if (this.marlinDivStatus && this.marlinDivCommands) {
             this.setStatus(Status.NC);
             this.marlinDivCommands.className = this.marlinDivCommands.className.replace('w3-show', 'w3-hide');
-        }
-    }
-
-    public onContextMenu(ev: PointerEvent) {
-        console.log('Marlin: onContextMenu', ev);
-
-        if(this.marlinDivContextMenu) {
-            this.marlinDivContextMenu.style.left = `${ev.pageX}px`;
-            this.marlinDivContextMenu.style.top = `${ev.pageY}px`;
-            this.marlinDivContextMenu.style.display = 'block';
-        }
-    }
-    public onMouseUp(ev: MouseEvent) {
-        console.log('Marlin: onMouseUp', ev)
-        if(this.marlinDivContextMenu) {
-            this.marlinDivContextMenu.style.display = 'none';
         }
     }
 
@@ -209,11 +215,6 @@ export class Marlin extends Device {
     private initHtml() {
         if (this.marlinDiv) {
             this.marlinDiv.innerHTML = `
-            <div id="marlinContextMenu" class="w3-modal w3-container w3-blue-grey">
-                Menu
-                <button id="marlinSetZero" class="w3-button w3-block w3-light-grey">set zero</button>
-                <button id="marlinMoveTo" class="w3-button w3-block w3-light-grey">move to</button>
-            </div>
             <div class="w3-border w3-border-dark-grey">
             <div id="marlinStatus"></div>
             <div id="marlinPosition" class="w3-tiny"></div>
@@ -243,16 +244,6 @@ export class Marlin extends Device {
             this.marlinDivStatus = document.getElementById("marlinStatus");
             this.marlinDivPosition = document.getElementById("marlinPosition");
             this.marlinDivCommands = document.getElementById("marlinCommands");
-            this.marlinDivContextMenu = document.getElementById("marlinContextMenu");
-            if(this.marlinDivContextMenu) {
-                this.marlinDivContextMenu.style.display = 'none';
-                this.marlinDivContextMenu.style.position = 'fixed';
-                this.marlinDivContextMenu.style.zIndex = '100';
-                this.marlinDivContextMenu.style.width = '200px';
-                this.marlinDivContextMenu.style.height = '10%';
-                this.marlinDivContextMenu.style.overflowY = 'hidden';
-
-            }
             this.setStatus(Status.NC);
             const marlinBtnHome = document.getElementById("marlinHome");
             if (marlinBtnHome) {

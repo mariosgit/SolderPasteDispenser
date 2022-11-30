@@ -23,7 +23,8 @@ class BoundingBox {
         return [(this.maxx - this.minx) * zoom, (this.maxy - this.miny) * zoom];
     }
 }
-class PadStyle {
+
+export class PadStyle {
     public form: string;
     public width: number;
     public height: number;
@@ -33,7 +34,8 @@ class PadStyle {
         this.height = h;
     }
 }
-class Pad {
+
+export class Pad {
     posX: number;
     posY: number;
     style: string;
@@ -69,6 +71,10 @@ export class PCB {
         this.mapStyles = new Map<string, PadStyle>();
         this.mapPads = new Map<string, Set<Pad>>();
         this.bb = new BoundingBox();
+    }
+
+    public getSelected() {
+        return this.nearest;
     }
 
     draw() {
