@@ -2,6 +2,7 @@ import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/can
 import { Device } from './device';
 import { Marlin } from './deviceMarlin';
 import { PCB } from './pcb';
+import { ParserGerber } from './parserGerber';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
@@ -19,21 +20,11 @@ const main: HTMLDivElement | null = <HTMLDivElement | null>document.getElementBy
 const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("openSidebar");
 
 const header = document.getElementsByTagName('header')[0];
-const footer = document.getElementsByTagName('footer')[0];
+const footer = document.getElementById('footer');
 
 let ctx: CanvasRenderingContext2D | null = null;
 let mouse: Mouse, grid: Grid;
 let pcb: PCB;
-let floatFracts = 1;
-let floatDezis = 1;
-let lastPad = "";
-
-let cancel = false;
-
-const reNumFormat = /^%FSLAX([0-9])([0-9])Y([0-9])([0-9])[*]%/;
-const reMatchPad = /^(%AD)(D[0-9]+)([A-Za-z]+)[,]([-0-9.]+)[X]?([-0-9.]+)?[X]?([-0-9.]+)?/;
-const reMatchPadCoordInit = /^([DG][0-9]+)[*]/;
-const reMatchPadCoord = /^X([-]?)([0-9]+)Y([-]?)([0-9]+)D([0-9]+)[*]/;
 
 let device = new Marlin();
 
@@ -83,9 +74,6 @@ function init() {
             })
             return false;
         }
-        progressCancel.onclick = () => {
-            cancel = true;
-        }
 
         body.ondrop = (ev) => {
             ev.preventDefault();
@@ -130,13 +118,17 @@ function init() {
         canvas.width = innerWidth;
         canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
 
-        mouse = new Mouse(ctx, canvas);
-        mouse.track();
-        grid = new Grid();
-        grid.step = 1;
-        grid.lineWidth = 0.03;
-        grid.boldWidth = 0.05;
-        grid.createLines(canvas);
+        if(ctx) {
+            pcb = new PCB(ctx, canvas);
+
+            mouse = new Mouse(ctx, canvas);
+            mouse.track();
+            grid = new Grid();
+            grid.step = 1;
+            grid.lineWidth = 0.03;
+            grid.boldWidth = 0.05;
+            grid.createLines(canvas);
+        }
 
         globalThis.resize();
 
@@ -177,174 +169,34 @@ function update() {
     }
 }
 
-function processGerberFile(file: File) {
-    if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
-        file.arrayBuffer().then((buf) => {
-            arrayBufferToString(buf, 'UTF-8', (text: string) => {
+async function processGerberFile(file: File) {
+    if (padsField && coordsField && ctx && canvas && progress && progressbar && progressCancel && dropZone) { // makes typescript happy...
 
-                padsField.innerHTML = '';
-                coordsField.innerHTML = '';
+        pcb = new PCB(ctx, canvas);
+        let parser = new ParserGerber(pcb);
 
-                if (dropZone)
-                    dropZone.innerText = file.name;
-
-                processGerberText(text);
-            });
-        });
-    }
-}
-
-async function processGerberText(text: string) {
-    if (uploadButton && padsField && coordsField && body && canvas && ctx && progress) { // makes typescript happy...
-
+        padsField.innerHTML = '';
+        coordsField.innerHTML = '';
+        dropZone.innerText = file.name;
         progress.style.display = 'block';
 
-        pcb = new PCB(ctx, canvas, device);
-
-        // console.log(text);
-        // translate line ends...
-        text = text.replace(/\r/g, ''); // remove windows trash
-        const lines = text.split('\n');
-
-        let lineNr = 1;
-        for (let line of lines) {
-            lineNr++;
-
-            if (cancel) {
-                cancel = false;
-                break;
-            }
-            // console.log(`gerber(${lineNr}/${lines.length}): `);
-
-            await processGerberLine(line);
-
+        parser.padsField = padsField;
+        parser.coordsField = coordsField;
+        progressCancel.onclick = () => {
+            parser.cancel();
+        }
+        parser.processCB = (value) => {
             if (progressbar) {
-                progressbar.style.width = `${lineNr * 100 / lines.length}%`;
+                progressbar.style.width = `${value}%`;
+                // console.log('progress:', value);
             }
-
-        } // for
-
-        pcb.retree();
+        }
+        await parser.parseFile(file);
 
         progress.style.display = 'none';
     }
 }
 
-
-async function processGerberLine(line: string) {
-    return new Promise<void>((resolve) => {
-        if (uploadButton && padsField && coordsField && body && ctx && progress) { // makes typescript happy...
-
-            // line = line.replace(/\n/g,'<br>');
-
-            // Zahlenformat info line "%FSLAX34Y34*%"
-            //   %FSLAX25Y25*% Coordinate format specification:
-            //   Coordinates format is 2.5:
-            //   2 digits in the integer part
-            //   5 digits in the fractional part
-            const matchNumFormat = reNumFormat.exec(line); //line.match();
-            if (matchNumFormat) {
-                // console.log(matchNumFormat);
-                floatDezis = parseInt(matchNumFormat[1]);
-                floatFracts = parseInt(matchNumFormat[2]);
-                console.log(`gerber: float digits = ${floatDezis} ${floatFracts}`);
-            }
-
-            // check for pad definitions
-            // %ADD21R,0.600000X1.050000*%
-            // %ADD10RoundRect,0.120000 X -0.180000
-            //               X 0.680000 X -0.180000
-            //              X -0.680000 X 0.180000
-            //              X -0.680000 X 0.180000
-            //               X 0.680000 X 0*%
-            const matchPad = reMatchPad.exec(line); // line.match();///);
-            // Wenn "C" dann gibts nur eine coord
-            if (matchPad) {
-                // console.log(matchPad);
-                padsField.innerHTML += `${matchPad[2]} ${matchPad[3]} ${matchPad[4]} ${matchPad[5]}<br>`;
-                if (matchPad[3] == 'RoundRect') {
-                    // kicad macro schnulli
-                    pcb.addPadStyle(matchPad[2], matchPad[3], Math.abs(parseFloat(matchPad[5])), Math.abs(parseFloat(matchPad[6])));
-                    // console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${Math.abs(parseFloat(matchPad[5]))}, ${Math.abs(parseFloat(matchPad[6]))}`);
-                } else {
-                    pcb.addPadStyle(matchPad[2], matchPad[3], parseFloat(matchPad[4]), parseFloat(matchPad[5]));
-                    // console.log(`gerber: style ${matchPad[2]},${matchPad[3]}, ${parseFloat(matchPad[4])}, ${parseFloat(matchPad[5])}`);
-                }
-            }
-
-            // Dxx* command - should be pad draw
-            const matchPadCoordInit = reMatchPadCoordInit.exec(line); //line.match();///);
-            if (matchPadCoordInit) {
-                // console.log(matchPadCoordInit);
-                lastPad = matchPadCoordInit[1];
-            }
-            // a pad line: "X379984Y963930D03*"
-            const matchPadCoord = reMatchPadCoord.exec(line); // line.match();///);
-            if (matchPadCoord) {
-                if (lastPad.startsWith('D')) { // ignore G36 or so commands
-                    // if (1) {
-                    // ignore and return ...
-                    // resolve();
-                    // console.log(matchPadCoord);
-                    let sx = matchPadCoord[2];
-                    let sy = matchPadCoord[4];
-                    const len = floatDezis + floatFracts;
-                    // fill freak's leading zeros
-                    while (sx.length < len) {
-                        sx = `0${sx}`;
-                    }
-                    while (sy.length < len) {
-                        sy = `0${sy}`;
-                    }
-                    // make a freak'n float
-                    let fx = 0.0;
-                    let fy = 0.0;
-                    sx = `${sx.substring(0, floatDezis)}.${sx.substring(floatDezis)}`;
-                    sy = `${sy.substring(0, floatDezis)}.${sy.substring(floatDezis)}`;
-                    fx = parseFloat(sx);
-                    fy = parseFloat(sy);
-                    if (matchPadCoord[1] == '-') {
-                        fx = fx * -1.0;
-                    }
-                    if (matchPadCoord[3] == '-') {
-                        fy = fy * -1.0;
-                    }
-
-                    fy = fy;
-                    coordsField.innerHTML += `${lastPad}:  x:${fx} y:${fy} <br>`;
-
-                    pcb.addPad(lastPad, fx, fy);
-                    // console.log(`gerber: pad ${lastPad}, ${fx}, ${fy}`);
-                } else {
-                    console.log(`ignoring ${lastPad}`);
-                }
-
-                // if(lineNr > 1500) {
-                //     break; // for testing !!!
-                // }
-            }
-        } // if
-        pcb.center();
-        setTimeout(resolve, 0); // this enables the progressbar / UI updates !
-    });
-}
-
-
-// found on se web...
-
-function arrayBufferToString(buffer, encoding, callback) {
-    var blob = new Blob([buffer], { type: 'text/plain' });
-    var reader = new FileReader();
-    reader.onload = (evt) => { callback(evt.target.result); };
-    reader.readAsText(blob, encoding);
-}
-
-function stringToArrayBuffer(string, encoding, callback) {
-    var blob = new Blob([string], { type: 'text/plain;charset=' + encoding });
-    var reader = new FileReader();
-    reader.onload = (evt) => { callback(evt.target.result); };
-    reader.readAsArrayBuffer(blob);
-}
 
 globalThis.accordionToggler = (id: string) => {
     var elem = document.getElementById(id);
@@ -382,7 +234,7 @@ globalThis.closeSidebar = () => {
 globalThis.resize = () => {
     if (canvas && header && footer && debug && coords) {
         canvas.width = innerWidth;
-        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 6;
+        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height;
         mouse.draw();
         grid.draw(ctx, canvas);
 
@@ -408,6 +260,7 @@ globalThis.resize = () => {
 
     }
 }
+
 document.addEventListener('DOMContentLoaded', init);
 
 window.addEventListener('resize', (val) => {

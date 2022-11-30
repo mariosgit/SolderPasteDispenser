@@ -8,25 +8,28 @@
     <!-- <link rel="icon" type="image/x-icon" href="./assets/favicon.ico"> -->
     <link rel="icon" type="image/svg" href="./assets/fontawesome-free-6.2.1-web/svgs/solid/syringe.svg">
     <link rel="stylesheet" href="./assets/w3.css">
+    <!-- https://www.w3schools.com/w3css/w3css_color_themes.asp -->
+    <link rel="stylesheet" href="./assets/w3-theme-indigo.css">
+
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./assets/fontawesome-free-6.2.1-web/css/all.min.css">
     <script type="module" src="./index.ts"></script>
 </head>
 
 <body>
-    <header class="w3-container w3-blue-grey">
-        <h1 class="w3-cursive " style="text-shadow:1px 1px 0 #444">
+    <header class="w3-container w3-theme-dark">
+        <h1 class="w3-cursive w3-text-theme-light" style="text-shadow:1px 1px 0 #444">
             <i class="fa-solid fa-syringe"></i>
              Solder Paste Dispenser
         </h1>
 
         <div class="">
             Gerber
-            <button class="w3-button w3-light-grey" id="uploadButton">upload</button>
+            <button class="w3-button w3-round w3-light-grey" id="uploadButton">upload</button>
             <span id="dropZone"> <i>or drop file anywhere</i> </span>
         </div>
 
-        <button id="openSidebar" class="w3-button w3-deep-orange w3-xlarge" onclick="globalThis.openSidebar()">&#9776;</button>
+        <button id="openSidebar" class="w3-button w3-round w3-theme w3-xlarge" onclick="globalThis.openSidebar()">&#9776;</button>
 
     </header>
 
@@ -34,25 +37,25 @@
         <canvas id="canvas"></canvas>
     </div>
 
-    <div class="w3-border w3-border-dark-grey w3-center w3-blue-grey" id="progress">
+    <div class="w3-card-4 w3-container w3-round w3-center w3-theme-dark" id="progress">
         loading...
-        <div class="w3-deep-orange w3-round " id="progressbar" style="height:24px;width:20%"></div>
+        <div class="w3-theme w3-round " id="progressbar" style="height:24px;width:20%"></div>
         <button id="progressCancel" class="w3-button w3-light-grey">cancel</button>
     </div>
 
-    <div class="w3-sidebar w3-bar-block w3-animate-right" id="debug">
+    <div class="w3-sidebar w3-bar-block w3-animate-right w3-grey" id="debug">
         <button class="w3-bar-item w3-button w3-large" onclick="globalThis.closeSidebar()">Close &times;</button>
         <!-- Marlin -->
         <button onclick="globalThis.accordionToggler('Marlin')"
-            class="w3-button w3-block w3-deep-orange w3-left-align">Marlin <i class="fa fa-caret-down"></i></button>
+            class="w3-button w3-block w3-theme w3-left-align">Marlin <i class="fa fa-caret-down"></i></button>
         <div id="Marlin" class="w3-show">
         </div>
         <!-- Device -->
         <button onclick="globalThis.accordionToggler('Device')"
-            class="w3-button w3-block w3-deep-orange w3-left-align">Device <i class="fa fa-caret-down"></i></button>
+            class="w3-button w3-block w3-theme w3-left-align">Device <i class="fa fa-caret-down"></i></button>
         <div id="Device" class="w3-show">
             <div class=" w3-border w3-border-dark-grey">
-                <div class="w3-tiny w3-cursive w3-blue-grey">devices</div>
+                <div class="w3-tiny w3-cursive w3-theme-dark">devices</div>
                 <div id="deviceInfo" class="w3-block">no devices</div>
             </div>
             <div>
@@ -61,22 +64,22 @@
                 <button id="deviceDisconnect" class="w3-button w3-light-grey w3-hide">disconnect</button>
                 <button id="deviceDosome" class="w3-button w3-light-grey w3-hide">dosome</button>
                 <form id="deviceInputForm" class="w3-tiny w3-border">
-                    <label class="w3-cursive w3-blue-grey">send to serial</label>
+                    <label class="w3-cursive w3-theme-dark">send to serial</label>
                     <input id="deviceInput" class="w3-input w3-border w3-border-dark-grey w3-light-grey w3-hover-light-grey" type="text">
                 </form>
             </div>
             <div class="w3-tiny w3-border w3-border-dark-grey">
-                <div class="w3-cursive w3-blue-grey">serial in/out</div>
+                <div class="w3-cursive w3-theme-dark">serial in/out</div>
                 <div id="deviceSerial" class="w3-tiny w3-monospace"></div>
             </div>
             <div class="w3-tiny w3-border w3-border-dark-grey">
-                <div class="w3-cursive w3-blue-grey">serial log</div>
+                <div class="w3-cursive w3-theme-dark">serial log</div>
                 <div id="deviceLog" class="w3-tiny w3-monospace">...</div>
             </div>
         </div>
         <!-- Log -->
         <button onclick="globalThis.accordionToggler('Coords')"
-            class="w3-button w3-block w3-deep-orange w3-left-align">Coords <i class="fa fa-caret-down"></i></button>
+            class="w3-button w3-block w3-theme w3-left-align">Coords <i class="fa fa-caret-down"></i></button>
         <div id="Coords" class="w3-show">
             <div class="w3-border w3-border-dark-grey">
                 <h4>Pads</h4>
@@ -85,11 +88,10 @@
                 <div id="coordsField" class="w3-tiny"></div>
             </div>
         </div>
-
     </div>
 
-    <footer class="w3-container w3-blue-grey">
-        <div class="w3-display-container" style="height:34px;">
+    <div class="w3-container w3-theme-dark" id="footer">
+        <div class="w3-display-container" style="height:84px;">
             <div class="w3-display-left w3-xlarge">made @
                 <a href="https://makerspace-darmstadt.de/"><img src="./assets/logo_full_left.svg"
                         alt="makerspace-darmstadt.de" height="32px"></a>
@@ -98,7 +100,7 @@
                 <a href="https://github.com/mariosgit/SolderPasteDispenser">github</a>
             </div>
         </div>
-    </footer>
+    </div>
 
 </body>
 

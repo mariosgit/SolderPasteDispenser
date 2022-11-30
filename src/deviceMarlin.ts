@@ -203,6 +203,9 @@ export class Marlin extends Device {
         this.serialWriteWait('G0 E-10').then((value) => { this.onBtnPos(); });
     };
 
+    /**
+     * Creates some buttons for Marlin specific actions...
+     */
     private initHtml() {
         if (this.marlinDiv) {
             this.marlinDiv.innerHTML = `
@@ -214,21 +217,26 @@ export class Marlin extends Device {
             <div class="w3-border w3-border-dark-grey">
             <div id="marlinStatus"></div>
             <div id="marlinPosition" class="w3-tiny"></div>
-            <div id="marlinCommands" class="w3-hide">
-            <button id="marlinHome" class="w3-button w3-light-grey">home</button>
-            <button id="marlinPos" class="w3-button w3-light-grey">pos?</button>
-            <button id="marlinRel" class="w3-button w3-light-grey">rel</button>
-            <button id="marlinAbs" class="w3-button w3-light-grey">abs</button>
-            <button id="marlinCold" class="w3-button w3-light-grey">cold</button>
-            <br>
-            <button id="marlinXP" class="w3-button w3-light-grey">x+</button>
-            <button id="marlinXM" class="w3-button w3-light-grey">x-</button>
-            <button id="marlinYP" class="w3-button w3-light-grey">y+</button>
-            <button id="marlinYM" class="w3-button w3-light-grey">y-</button>
-            <button id="marlinZP" class="w3-button w3-light-grey">z+</button>
-            <button id="marlinZM" class="w3-button w3-light-grey">z-</button>
-            <button id="marlinEP" class="w3-button w3-light-grey">e+</button>
-            <button id="marlinEM" class="w3-button w3-light-grey">e-</button>
+            <div id="marlinCommands" class="w3-tiny w3-hide">
+            <p>
+            <button id="marlinHome" class="w3-button w3-round w3-light-grey">home</button>
+            <button id="marlinPos"  class="w3-button w3-round w3-light-grey">pos?</button>
+            <button id="marlinRel"  class="w3-button w3-round w3-light-grey">rel</button>
+            <button id="marlinAbs"  class="w3-button w3-round w3-light-grey">abs</button>
+            <button id="marlinCold" class="w3-button w3-round w3-light-grey">cold</button>
+            </p>
+            <p>
+            <button id="marlinXP" class="w3-button w3-round w3-light-grey">x+</button>
+            <button id="marlinXM" class="w3-button w3-round w3-light-grey">x-</button>
+            <button id="marlinYP" class="w3-button w3-round w3-light-grey">y+</button>
+            <button id="marlinYM" class="w3-button w3-round w3-light-grey">y-</button>
+            <button id="marlinZP" class="w3-button w3-round w3-light-grey">z+</button>
+            <button id="marlinZM" class="w3-button w3-round w3-light-grey">z-</button>
+            </p>
+            <p>
+            <button id="marlinEP" class="w3-button w3-round w3-light-grey">e+</button>
+            <button id="marlinEM" class="w3-button w3-round w3-light-grey">e-</button>
+            </p>
             </div>
             </div>
             `

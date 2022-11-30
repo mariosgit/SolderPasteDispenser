@@ -65,9 +65,15 @@ export class Device {
         console.log('Device: onSerialDisconnected')
     }
 
+    /**
+     * Overwrite this in derived class to get notification when context menu is requested.
+     */
     public onContextMenu(ev: MouseEvent) {
         console.log('Device: onContextMenu')
     }
+    /**
+     * Overwrite this in derived class to get notification when mouseUp.
+     */
     public onMouseUp(ev: MouseEvent) {
         console.log('Device: onMouseUp')
     }
@@ -78,7 +84,7 @@ export class Device {
     public async serialConnect() {
         // opens dialog where user can select a device
         navigator.serial.requestPort().then((port) => {
-            console.log('serialConnect',port);
+            console.log('serialConnect', port);
             this.serialPortOpen(port);
         }).catch((reason) => {
             // console.warn('serialConnect',reason);
@@ -219,7 +225,7 @@ export class Device {
                 console.log(`serial available, ports: `, port.getInfo());
                 const { usbProductId, usbVendorId } = port.getInfo();
                 console.log(`updatePorts port pid:${usbProductId} vid:${usbVendorId}`);
-                html += `<div class="w3-container"><i class="fa-solid fa-microchip"></i> pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-light-grey w3-tiny" id="${usbVendorId}-${usbProductId}"><i class="fa fa-plug"></i> connect </button></div>`;
+                html += `<div class="w3-container"><i class="fa-solid fa-microchip"></i> pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-round w3-light-grey w3-tiny" id="${usbVendorId}-${usbProductId}"><i class="fa fa-plug"></i> connect </button></div>`;
             }
             if (this.deviceInfo) {
                 this.deviceInfo.innerHTML = html;
@@ -367,9 +373,9 @@ export class Device {
 
     private serialLog(text: string, incomming: boolean) {
         if (this.deviceSerial) {
-            while(this.deviceSerial.childElementCount > 20) {
+            while (this.deviceSerial.childElementCount > 20) {
                 let ch = this.deviceSerial.firstChild;
-                if(ch) {
+                if (ch) {
                     this.deviceSerial.removeChild(ch);
                 }
             }
