@@ -87,14 +87,11 @@ function init() {
             // console.log(event);
             // find the coords !!!
             // !!! need to be relative to zero !!! uuuhhh
-            let sel = pcb.getSelected();
-            if(sel.length > 0) {
-                // console.log(sel[0]);
-                if(sel[0].length > 0) {
-                    let pad:Pad = sel[0][0];
-                    console.log(pad);
-                    device.moveTo(pad.posX, pad.posY, undefined,undefined);
-                }
+            let pads = pcb.getSelected();
+            if (pads.length > 0) {
+                let pad: Pad = pads[0];
+                console.log(pad);
+                device.moveTo(pad.posX, pad.posY, undefined, undefined);
             }
         }
 
@@ -132,14 +129,14 @@ function init() {
         body.oncontextmenu = (ev) => {
             // console.log('oncontextmenu',ev);
             ev.preventDefault();
-            if( contextMenu) {
+            if (contextMenu) {
                 contextMenu.style.left = `${ev.pageX}px`;
                 contextMenu.style.top = `${ev.pageY}px`;
                 contextMenu.className = contextMenu.className.replace('w3-hide', 'w3-show');
             }
         }
         body.onmouseup = (ev) => {
-            if( contextMenu) {
+            if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
         }
@@ -148,7 +145,7 @@ function init() {
         canvas.width = innerWidth;
         canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
 
-        if(ctx) {
+        if (ctx) {
             pcb = new PCB(ctx, canvas);
 
             mouse = new Mouse(ctx, canvas);
@@ -174,8 +171,8 @@ function update() {
         window.requestAnimationFrame(update);
 
         ctx.setTransform(
-            pcb?pcb.zoom:1, 0,
-            0, pcb?pcb.zoom:1,
+            pcb ? pcb.zoom : 1, 0,
+            0, pcb ? pcb.zoom : 1,
             0, 0);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
