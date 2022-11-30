@@ -274,7 +274,7 @@ export class PCB {
                     found = this.tree.nearest(pad, 1, dist);
                 } else {
                     dist = (dist/2) * (dist/2); // search require square distance ?
-                    found = this.tree.nearest(pad, 99, dist);
+                    found = this.tree.nearest(pad, 99999, dist);
                 }
                 console.log(`Pcb:mouseUp found #${found.length}`);
                 if(!event.shiftKey) {
