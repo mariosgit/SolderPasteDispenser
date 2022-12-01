@@ -4,7 +4,7 @@ Repurposing a 3D Printer to dispense stuff from syringe.
 
 ## Status
 
-Ultraexperimental - It loads a Gerber file and ~~dumps all coords~~ renders it.
+Ultraexperimental - It loads a Gerber file and ~~dumps all coords~~ renders it. Rudimental Marlin 3Dprinter support.
 
 Try me here https://mariosgit.github.io/SolderPasteDispenser/
 

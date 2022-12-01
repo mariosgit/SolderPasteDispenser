@@ -27,6 +27,7 @@ const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>do
 const header = document.getElementsByTagName('header')[0];
 const footer = document.getElementById('footer');
 
+let messageClearTimeout:number|undefined = undefined;
 let ctx: CanvasRenderingContext2D | null = null;
 let mouse: Mouse, grid: Grid;
 let pcb: PCB;
@@ -172,6 +173,22 @@ function init() {
     }
 }
 
+function message(text: string) {
+    if(messageClearTimeout) {
+        window.clearTimeout(messageClearTimeout);
+    }
+    if(messageElem) {
+        messageElem.innerHTML = `${text}`;
+        messageClearTimeout = window.setTimeout(messageClear, 10000);
+    }
+}
+function messageClear() {
+    messageClearTimeout = undefined;
+    if(messageElem) {
+        messageElem.innerHTML = '';
+    }
+}
+
 function update() {
     if (canvas && ctx) {
         window.requestAnimationFrame(update);
@@ -218,13 +235,15 @@ async function processGerberFile(file: File) {
         progressCancel.onclick = () => {
             parser.cancel();
         }
-        parser.processCB = (value) => {
+        parser.processCB = (value:number) => {
             if (progressbar) {
                 progressbar.style.width = `${value}%`;
                 // console.log('progress:', value);
             }
         }
         await parser.parseFile(file);
+
+        pcb.zoomToFit([canvas.width, canvas.height]);
 
         progress.style.display = 'none';
     }
@@ -264,6 +283,19 @@ globalThis.closeSidebar = () => {
     }
 }
 
+globalThis.zoomToFit = () => {
+    if(pcb && canvas) {
+        pcb.zoomToFit([canvas.width, canvas.height]);
+    }
+}
+
+globalThis.rotateRight = () => {
+    if(pcb && canvas) {
+        // pcb.zoomToFit([canvas.width, canvas.height]);
+    }
+    message('müsste ma einer implementieren, ne');
+}
+
 globalThis.resize = () => {
     if (canvas && header && footer && debug && coords) {
         canvas.width = innerWidth;
@@ -273,8 +305,8 @@ globalThis.resize = () => {
 
         // height of debug is innerHeight - margin top/bottom more or less - footer.height
         // console.log('resize: margin', debug.getBoundingClientRect().top);
-        let dheight = innerHeight - footer.getBoundingClientRect().height; // canvas.height + header.getBoundingClientRect().height - 16;
-        debug.style.height = `${dheight}px`; // 16 is marginTop
+        let dmaxheight = innerHeight - footer.getBoundingClientRect().height; // canvas.height + header.getBoundingClientRect().height - 16;
+        // debug.style.height = `${dheight}px`; // 16 is marginTop
         // console.log('resize: inner height', innerHeight);
         // console.log('resize: debug height', dheight);
 
@@ -282,21 +314,35 @@ globalThis.resize = () => {
         let height = 0;
         for (let child of debug.children) {
             let elem: HTMLElement = <HTMLElement>child;
-            // console.log(`resize:   ${child.id} ${elem.clientHeight}`);
+            // console.log(`resize:   ${child.id} ${elem.clientHeight} ${elem.className}`);
+            if(elem.className.indexOf('w3-hide') != -1)
+                continue;
             height += elem.clientHeight;
         }
-        height -= coords.getBoundingClientRect().height;
-        // console.log('resize: debug content height', height);
 
-        // coords can take the rest of the space
-        coords.style.height = `${dheight - height - 16}px`;
+        console.log('resize: debug content height', height);
 
+        // so far so good
+
+        // if coords is shown, set debug size to max
+        // if coords is shown, give it all the rest of the space
+        console.log('resize coords ', coords.className.indexOf('w3-hide'));
+        if(coords.className.indexOf('w3-hide') != -1) {
+            console.log('resize coords is NOT visible');
+            debug.style.height = `${height+16}px`;
+            coords.style.height = `${16}px`; // egal ?
+        } else {
+            console.log('resize coords is visible');
+            height -= coords.getBoundingClientRect().height; // do not count coords to hight
+            debug.style.height = `${dmaxheight}px`;
+            coords.style.height = `${dmaxheight - height - 16}px`;
+        }
     }
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
 window.addEventListener('resize', (val) => {
-    console.log(`resize: ${val}`);
+    // console.log(`resize: ${val}`);
     globalThis.resize();
 })

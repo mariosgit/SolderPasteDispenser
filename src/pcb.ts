@@ -135,123 +135,22 @@ export class PCB {
         return this.bbSelection.zero();
     }
 
-    draw() {
-        // theoretisch so...
-        // this.ctx.fillStyle = 'orangered';
-        this.ctx.fillStyle = 'antiquewhite';
+    public zoomToFit(size:[number,number]) {
+        let psize = this.bbPcb.size();
+        let zw = size[0] / psize[0];
+        let zh = size[1] / psize[1];
+        this.zoom = ((zw > zh)? zh : zw) * .9;
+        console.log(`Pcb:zoomToFit zoom ${this.zoom}`, psize);
+        this.center();
+    }
 
-        // draw bb center
-        this.ctx.strokeStyle = 'red';
-        let center = this.bbPcb.center(this.zoom);
-        this.ctx.beginPath();
-        this.ctx.moveTo(center[0] - 10 + this.mouseOffX, center[1] + this.mouseOffY);
-        this.ctx.lineTo(center[0] + 10 + this.mouseOffX, center[1] + this.mouseOffY);
-        this.ctx.moveTo(center[0] + this.mouseOffX, center[1] - 10 + this.mouseOffY);
-        this.ctx.lineTo(center[0] + this.mouseOffX, center[1] + 10 + this.mouseOffY);
-        this.ctx.stroke();
-        // draw bb
-        this.ctx.beginPath();
-        this.ctx.rect(this.bbPcb.zero(this.zoom)[0] + this.mouseOffX, this.bbPcb.zero(this.zoom)[1] + this.mouseOffY, this.bbPcb.size(this.zoom)[0], this.bbPcb.size(this.zoom)[1]);
-        this.ctx.stroke();
-
-        for (let padstyle of this.mapPads.keys()) {
-
-            const sty = this.mapStyles.get(padstyle);
-            const padset = this.mapPads.get(padstyle);
-            if (sty && padset) {
-                const sw = sty.width * this.zoom;
-                const sh = sty.height * this.zoom;
-                for (let pad of padset.values()) {
-                    if (sty.form == 'R' || sty.form == 'O' || sty.form == 'RoundRect') {
-                        this.ctx.beginPath();
-
-                        this.ctx.fillRect(
-                            pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
-                            pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                            sw, sh);
-                        this.ctx.fill();
-
-                    } else if (sty.form == 'C') {
-                        this.ctx.beginPath();
-                        this.ctx.ellipse(
-                            pad.posX * this.zoom + this.mouseOffX,
-                            pad.posY * this.zoom + this.mouseOffY,
-                            sw / 2,
-                            sw / 2,
-                            0, 0, 2 * Math.PI);
-                        // this.ctx.arc(
-                        //     pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
-                        //     pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
-                        //     sty.width * this.zoom,
-                        //     0, 2 * Math.PI);
-                        this.ctx.fill();
-                    } else {
-                        console.log(`draw quatsch ${sty.form}`);
-                        break;
-                    }
-                }
-            }
-        } // for padstyle
-
-        // draw selectionCross(es)
-        this.ctx.strokeStyle = 'purple';
-        this.ctx.beginPath();
-        let csize = .5;
-        for(const near of this.nearest) {
-            this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
-            // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
-        }
-        this.ctx.stroke();
-
-        // draw selection lower left = zero kandidate
-        let zero = [0,0];
-        if(this.bbSelection) {
-            csize = 2 * this.zoom;
-            zero = this.bbSelection.zero(this.zoom);
-            this.ctx.beginPath();
-            this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
-            this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
-            this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
-            this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
-            this.ctx.stroke();
-        }
-
-        // draw origin
-        this.ctx.strokeStyle = 'black';
-        zero = this.bbZero.center(this.zoom);
-        this.ctx.beginPath();
-        this.ctx.moveTo(-csize + this.mouseOffX, this.mouseOffY);
-        this.ctx.lineTo(+csize + this.mouseOffX, this.mouseOffY);
-        this.ctx.moveTo(this.mouseOffX,       -csize + this.mouseOffY);
-        this.ctx.lineTo(this.mouseOffX,       +csize + this.mouseOffY);
-        this.ctx.stroke();
-
-        // draw zero
-        this.ctx.strokeStyle = 'black';
-        zero = this.bbZero.zero(this.zoom);
-        this.ctx.beginPath();
-        this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
-        this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
-        this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
-        this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
-        this.ctx.stroke();
-
-
-        // draw selectionRectangle
-        if(this.mouseSelect) {
-            this.ctx.strokeStyle = 'purple';
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
-            this.ctx.stroke();
+    public center() {
+        if (this.canvas) {
+            this.mouseOffX = -(this.bbPcb.center()[0] * this.zoom) + this.canvas.width / 2;
+            this.mouseOffY = -(this.bbPcb.center()[1] * this.zoom) + this.canvas.height / 2;
         }
     }
+
 
     addPadStyle(name: string, form: string, w: number, h: number) {
         this.mapStyles.set(name, new PadStyle(form, w, h));
@@ -266,13 +165,6 @@ export class PCB {
             const newpad = new Pad(style, x, y);
             padset.add(newpad);
             this.bbPcb.update(x, y);
-        }
-    }
-
-    center() {
-        if (this.canvas) {
-            this.mouseOffX = -(this.bbPcb.center()[0] * this.zoom) + this.canvas.width / 2;
-            this.mouseOffY = -(this.bbPcb.center()[1] * this.zoom) + this.canvas.height / 2;
         }
     }
 
@@ -399,4 +291,123 @@ export class PCB {
     static distance(a:Pad, b:Pad) {
         return Math.pow(a.posX - b.posX, 2) +  Math.pow(a.posY - b.posY, 2);
     }
+
+    public draw() {
+        // theoretisch so...
+        // this.ctx.fillStyle = 'orangered';
+        this.ctx.fillStyle = 'antiquewhite';
+
+        // draw bb center
+        this.ctx.strokeStyle = 'red';
+        let center = this.bbPcb.center(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(center[0] - 10 + this.mouseOffX, center[1] + this.mouseOffY);
+        this.ctx.lineTo(center[0] + 10 + this.mouseOffX, center[1] + this.mouseOffY);
+        this.ctx.moveTo(center[0] + this.mouseOffX, center[1] - 10 + this.mouseOffY);
+        this.ctx.lineTo(center[0] + this.mouseOffX, center[1] + 10 + this.mouseOffY);
+        this.ctx.stroke();
+        // draw bb
+        this.ctx.beginPath();
+        this.ctx.rect(this.bbPcb.zero(this.zoom)[0] + this.mouseOffX, this.bbPcb.zero(this.zoom)[1] + this.mouseOffY, this.bbPcb.size(this.zoom)[0], this.bbPcb.size(this.zoom)[1]);
+        this.ctx.stroke();
+
+        for (let padstyle of this.mapPads.keys()) {
+
+            const sty = this.mapStyles.get(padstyle);
+            const padset = this.mapPads.get(padstyle);
+            if (sty && padset) {
+                const sw = sty.width * this.zoom;
+                const sh = sty.height * this.zoom;
+                for (let pad of padset.values()) {
+                    if (sty.form == 'R' || sty.form == 'O' || sty.form == 'RoundRect') {
+                        this.ctx.beginPath();
+
+                        this.ctx.fillRect(
+                            pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
+                            pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
+                            sw, sh);
+                        this.ctx.fill();
+
+                    } else if (sty.form == 'C') {
+                        this.ctx.beginPath();
+                        this.ctx.ellipse(
+                            pad.posX * this.zoom + this.mouseOffX,
+                            pad.posY * this.zoom + this.mouseOffY,
+                            sw / 2,
+                            sw / 2,
+                            0, 0, 2 * Math.PI);
+                        // this.ctx.arc(
+                        //     pad.posX * this.zoom - sw / 2.0 + this.mouseOffX,
+                        //     pad.posY * this.zoom - sh / 2.0 + this.mouseOffY,
+                        //     sty.width * this.zoom,
+                        //     0, 2 * Math.PI);
+                        this.ctx.fill();
+                    } else {
+                        console.log(`draw quatsch ${sty.form}`);
+                        break;
+                    }
+                }
+            }
+        } // for padstyle
+
+        // draw selectionCross(es)
+        this.ctx.strokeStyle = 'purple';
+        this.ctx.beginPath();
+        let csize = .5;
+        for(const near of this.nearest) {
+            this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
+            // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
+        }
+        this.ctx.stroke();
+
+        // draw selection lower left = zero kandidate
+        let zero = [0,0];
+        if(this.bbSelection) {
+            csize = 2 * this.zoom;
+            zero = this.bbSelection.zero(this.zoom);
+            this.ctx.beginPath();
+            this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
+            this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+            this.ctx.stroke();
+        }
+
+        // draw origin
+        this.ctx.strokeStyle = 'black';
+        zero = this.bbZero.center(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(-csize + this.mouseOffX, this.mouseOffY);
+        this.ctx.lineTo(+csize + this.mouseOffX, this.mouseOffY);
+        this.ctx.moveTo(this.mouseOffX,       -csize + this.mouseOffY);
+        this.ctx.lineTo(this.mouseOffX,       +csize + this.mouseOffY);
+        this.ctx.stroke();
+
+        // draw zero
+        this.ctx.strokeStyle = 'black';
+        zero = this.bbZero.zero(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
+        this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+        this.ctx.stroke();
+
+
+        // draw selectionRectangle
+        if(this.mouseSelect) {
+            this.ctx.strokeStyle = 'purple';
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
+            this.ctx.stroke();
+        }
+    }
+
 }
