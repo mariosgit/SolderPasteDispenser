@@ -20,6 +20,10 @@
 # - feature: change baudrate (perhaps hidden just for debugging/testing purposes)
 # - how is online version deployed, is in sync with latested commit, is deployment triggered
 
+# bugs:
+# - parsing error G0 X-0 -> minus sign change regex
+# - recover from exception (catch)
+
 import uselect
 from sys import stdin
 import time
