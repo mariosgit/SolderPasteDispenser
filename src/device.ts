@@ -38,7 +38,7 @@ export class Device {
         this.deviceSerial = <HTMLDivElement | null>document.getElementById("deviceSerial");
         this.port = null;
         this.textDecoder = new TextDecoderStream();
-        if (this.deviceCheck && this.deviceConnect && this.deviceDisconnect && this.deviceDosome && this.deviceInput && this.deviceInputForm) {
+        if (this.deviceCheck && this.deviceConnect && this.deviceDisconnect && this.deviceInput && this.deviceInputForm) {
             this.deviceCheck.onclick = this.serialCheck.bind(this);
             this.deviceConnect.onclick = this.serialConnect.bind(this);
             this.deviceDisconnect.onclick = this.serialDisconnect.bind(this);
@@ -52,8 +52,8 @@ export class Device {
     /**
      * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
      */
-    public setZero?(): void
-    /**
+    public setZero?(point:[number,number]): void;
+        /**
      * Overwrite! Move to position. If one coordinate is undefined, it's ignored
      */
     public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void
@@ -61,18 +61,18 @@ export class Device {
     /**
      * Overwrite this in derived class to get notification when some device was connected.
      */
-    // protected onSerialConnected?():void;
+    protected onSerialConnected?():void;
     /**
      * Overwrite this in derived class to get notification when some device was disconnected.
      */
-    // protected onSerialDisconnected?():void;
+    protected onSerialDisconnected?():void;
 
     /**
      * Opens a dialog where user can select a device to connect.
      */
     public async serialConnect() {
         // opens dialog where user can select a device
-        navigator.serial.requestPort().then((port) => {
+        (<any>navigator).serial.requestPort().then((port) => {
             console.log('serialConnect', port);
             this.serialPortOpen(port);
         }).catch((reason) => {
@@ -186,12 +186,12 @@ export class Device {
         let result = false;
         if ("serial" in navigator) {
             this.updatePorts();
-            navigator.serial.addEventListener("connect", (event) => {
+            (<any>navigator).serial.addEventListener("connect", (event) => {
                 // TODO: Automatically open event.target or warn user a port is available.
                 console.log('serialCheck:connect', event);
                 this.updatePorts();
             });
-            navigator.serial.addEventListener("disconnect", (event) => {
+            (<any>navigator).serial.addEventListener("disconnect", (event) => {
                 // TODO: Remove |event.target| from the UI.
                 // If the serial port was opened, a stream error would be observed as well.
                 console.log('serialCheck:disconnect', event);
@@ -206,7 +206,7 @@ export class Device {
 
     private updatePorts() {
         // lists all recently used ports, could just open one then.
-        navigator.serial.getPorts().then((ports) => {
+        (<any>navigator).serial.getPorts().then((ports) => {
             console.log('updatePorts:', ports);
             this.ports = ports;
             let html = '';//devices:<br>';
@@ -237,11 +237,12 @@ export class Device {
     private serialPortOpen(port: any) {
         port.onconnect = () => {
             console.log(`CONNECTED`);
-            // this.onSerialConnected(); // signal derived class // tut nix :(
         };
         port.ondisconnect = () => {
             console.log(`DISCONNECTED`);
-            this.onSerialDisconnected();
+            if(this.onSerialDisconnected) {
+                this.onSerialDisconnected();
+            }
         };
         port.open({ baudRate: 250000 }).then((val) => {
             this.port = port;
@@ -249,7 +250,9 @@ export class Device {
                 this.deviceLog.innerHTML = "connected<br>";
             }
             console.log('port opened ? ', this.port);
-            this.onSerialConnected();
+            if(this.onSerialConnected){
+                this.onSerialConnected();
+            }
 
             setTimeout(this.serialRead.bind(this), 0); // start read loop
         }).catch((error) => {

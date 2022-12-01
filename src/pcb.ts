@@ -6,6 +6,9 @@ class BoundingBox {
     maxx: number = -99999;
     maxy: number = -99999;
     constructor() { }
+    updateFromPad(pad:Pad) {
+        this.update(pad.posX, pad.posY);
+    }
     update(x: number, y: number) {
         if (x < this.minx) this.minx = x;
         if (y < this.miny) this.miny = y;
@@ -52,6 +55,9 @@ export class Pad {
         this.posY = y;
         this.style = style;
     }
+    asTuple():[number,number] {
+        return [this.posX, this.posY];
+    }
 }
 
 export class PCB {
@@ -70,8 +76,12 @@ export class PCB {
     mouseSelectX: number;
     mouseSelectY: number;
 
+    posZero: number[];
+
     zoom: number = 5.0;
-    bb: BoundingBox;
+    bbPcb: BoundingBox;
+    bbSelection: BoundingBox;
+    bbZero: BoundingBox; // use center as zero
 
     tree: kdTree<Pad>;
     nearest:[Pad, number][] = [];
@@ -81,9 +91,32 @@ export class PCB {
         this.canvas = canvas;
         this.mapStyles = new Map<string, PadStyle>();
         this.mapPads = new Map<string, Set<Pad>>();
-        this.bb = new BoundingBox();
+        this.bbPcb = new BoundingBox();
+        this.bbZero = new BoundingBox();
+        this.bbSelection = new BoundingBox();
     }
 
+    /**
+     * Sets the Zero position to the lower left of selection rectangle.
+     */
+    public setZero():void {
+        let result = false;
+        // use last selection ???
+        this.bbZero = this.bbSelection;
+        result = true;
+        console.log(`Pcb:setZero: ${this.bbZero.zero()}`);
+    }
+
+    /**
+     * @returns Zero position relative to Origin(0,0).
+     */
+    public getZero():[number,number] {
+        return this.bbZero.zero(); // lower left ?? better when .center() ??
+    }
+
+    /**
+     * @returns All Pads in selection.
+     */
     public getSelected():Pad[] {
         let result:Pad[] = [];
         if(this.nearest.length > 0) {
@@ -95,23 +128,21 @@ export class PCB {
         return result;
     }
 
+    /**
+     * @returns Lower left of selection as tuple
+     */
+    public getSelectedZero():[number,number] {
+        return this.bbSelection.zero();
+    }
+
     draw() {
         // theoretisch so...
         // this.ctx.fillStyle = 'orangered';
         this.ctx.fillStyle = 'antiquewhite';
 
-        // draw zero
-        this.ctx.strokeStyle = 'black';
-        this.ctx.beginPath();
-        this.ctx.moveTo(-10 + this.mouseOffX, 0 + this.mouseOffY);
-        this.ctx.lineTo(10 + this.mouseOffX, 0 + this.mouseOffY);
-        this.ctx.moveTo(0 + this.mouseOffX, -10 + this.mouseOffY);
-        this.ctx.lineTo(0 + this.mouseOffX, 10 + this.mouseOffY);
-        this.ctx.stroke();
-
         // draw bb center
         this.ctx.strokeStyle = 'red';
-        let center = this.bb.center(this.zoom);
+        let center = this.bbPcb.center(this.zoom);
         this.ctx.beginPath();
         this.ctx.moveTo(center[0] - 10 + this.mouseOffX, center[1] + this.mouseOffY);
         this.ctx.lineTo(center[0] + 10 + this.mouseOffX, center[1] + this.mouseOffY);
@@ -120,7 +151,7 @@ export class PCB {
         this.ctx.stroke();
         // draw bb
         this.ctx.beginPath();
-        this.ctx.rect(this.bb.zero(this.zoom)[0] + this.mouseOffX, this.bb.zero(this.zoom)[1] + this.mouseOffY, this.bb.size(this.zoom)[0], this.bb.size(this.zoom)[1]);
+        this.ctx.rect(this.bbPcb.zero(this.zoom)[0] + this.mouseOffX, this.bbPcb.zero(this.zoom)[1] + this.mouseOffY, this.bbPcb.size(this.zoom)[0], this.bbPcb.size(this.zoom)[1]);
         this.ctx.stroke();
 
         for (let padstyle of this.mapPads.keys()) {
@@ -162,19 +193,52 @@ export class PCB {
             }
         } // for padstyle
 
-        // draw selectionCross
+        // draw selectionCross(es)
         this.ctx.strokeStyle = 'purple';
         this.ctx.beginPath();
-        const csize = 1;
+        let csize = .5;
         for(const near of this.nearest) {
             this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
             this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
             this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
             this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
-
             // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
         }
         this.ctx.stroke();
+
+        // draw selection lower left = zero kandidate
+        let zero = [0,0];
+        if(this.bbSelection) {
+            csize = 2 * this.zoom;
+            zero = this.bbSelection.zero(this.zoom);
+            this.ctx.beginPath();
+            this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
+            this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+            this.ctx.stroke();
+        }
+
+        // draw origin
+        this.ctx.strokeStyle = 'black';
+        zero = this.bbZero.center(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(-csize + this.mouseOffX, this.mouseOffY);
+        this.ctx.lineTo(+csize + this.mouseOffX, this.mouseOffY);
+        this.ctx.moveTo(this.mouseOffX,       -csize + this.mouseOffY);
+        this.ctx.lineTo(this.mouseOffX,       +csize + this.mouseOffY);
+        this.ctx.stroke();
+
+        // draw zero
+        this.ctx.strokeStyle = 'black';
+        zero = this.bbZero.zero(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
+        this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+        this.ctx.stroke();
+
 
         // draw selectionRectangle
         if(this.mouseSelect) {
@@ -201,14 +265,14 @@ export class PCB {
         if (padset) {
             const newpad = new Pad(style, x, y);
             padset.add(newpad);
-            this.bb.update(x, y);
+            this.bbPcb.update(x, y);
         }
     }
 
     center() {
         if (this.canvas) {
-            this.mouseOffX = -(this.bb.center()[0] * this.zoom) + this.canvas.width / 2;
-            this.mouseOffY = -(this.bb.center()[1] * this.zoom) + this.canvas.height / 2;
+            this.mouseOffX = -(this.bbPcb.center()[0] * this.zoom) + this.canvas.width / 2;
+            this.mouseOffY = -(this.bbPcb.center()[1] * this.zoom) + this.canvas.height / 2;
         }
     }
 
@@ -261,32 +325,43 @@ export class PCB {
             this.mouseSelectX = mx;
             this.mouseSelectY = my;
 
-            var bb = new BoundingBox();
-            bb.update(this.mouseStartX, this.mouseStartY);
-            bb.update(this.mouseSelectX, this.mouseSelectY);
-            let pad = new Pad('', bb.center()[0], bb.center()[1]);
-            console.log(`Pcb:mouseUp cx:${pad.posX} cy:${pad.posY} diagonal:${bb.diagonal()}`);
+            // bb = selected rectangle
+            this.bbSelection = new BoundingBox();
+            this.bbSelection.update(this.mouseStartX, this.mouseStartY);
+            this.bbSelection.update(this.mouseSelectX, this.mouseSelectY);
+
+            let pad = new Pad('', this.bbSelection.center()[0], this.bbSelection.center()[1]);
+            console.log(`Pcb:mouseUp cx:${pad.posX} cy:${pad.posY} diagonal:${this.bbSelection.diagonal()}`);
 
             if(this.tree) {
                 let found:[Pad, number][] = [];
-                let dist = bb.diagonal();
+                let dist = this.bbSelection.diagonal();
                 if(dist < 0.1) { // no drag - only one
                     found = this.tree.nearest(pad, 1, dist);
+                    this.nearest = found;
                 } else {
                     dist = (dist/2) * (dist/2); // search require square distance ?
                     found = this.tree.nearest(pad, 99999, dist);
-                }
-                console.log(`Pcb:mouseUp found #${found.length}`);
-                if(!event.shiftKey) {
-                    this.nearest = [];
-                }
-                for(const near of found) {
-                    // console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
-                    /// uuuhhh check if inside the box
-                    if(bb.inside(near[0])) {
-                        this.nearest.push(near);
+                    if(!event.shiftKey) {
+                        this.nearest = [];
+                    }
+                    for(const near of found) {
+                        // console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
+                        /// uuuhhh check if inside the box
+                        if(this.bbSelection.inside(near[0])) {
+                            this.nearest.push(near);
+                        }
                     }
                 }
+
+                // need a bb for actual selected points to get zero right
+                let bbNewSelection = new BoundingBox();
+                for(const near of this.nearest) {
+                    bbNewSelection.updateFromPad(near[0]);
+                }
+                this.bbSelection = bbNewSelection;
+
+                console.log(`Pcb:mouseUp found #${found.length}`);
             }
         }
     }

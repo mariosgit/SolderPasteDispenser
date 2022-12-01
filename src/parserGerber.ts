@@ -156,7 +156,6 @@ export class ParserGerber extends Parser {
             setTimeout(resolve, 0); // this enables the progressbar / UI updates !
         });
     }
-
 }
 
 // found on se web...
@@ -164,13 +163,13 @@ export class ParserGerber extends Parser {
 function arrayBufferToString(buffer, encoding, callback) {
     var blob = new Blob([buffer], { type: 'text/plain' });
     var reader = new FileReader();
-    reader.onload = (evt) => { callback(evt.target.result); };
+    reader.onload = (evt) => { if(evt.target) callback(evt.target.result); };
     reader.readAsText(blob, encoding);
 }
 
 function stringToArrayBuffer(string, encoding, callback) {
     var blob = new Blob([string], { type: 'text/plain;charset=' + encoding });
     var reader = new FileReader();
-    reader.onload = (evt) => { callback(evt.target.result); };
+    reader.onload = (evt) => { if(evt.target) callback(evt.target.result); };
     reader.readAsArrayBuffer(blob);
 }

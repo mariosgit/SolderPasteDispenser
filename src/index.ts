@@ -5,6 +5,7 @@ import { PCB, Pad, PadStyle } from './pcb';
 import { ParserGerber } from './parserGerber';
 
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
+const messageElem: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("messageElem");
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
 const coords: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("Coords");
@@ -79,26 +80,31 @@ function init() {
             return false;
         }
 
-        menuSetZero.onclick = () => {
-            device.setZero();
+        menuSetZero.onclick = (event:MouseEvent) => {
+            pcb.setZero();
+            device.setZero(pcb.getZero()); // device must substract "zero" from all coords
         }
 
-        menuMoveTo.onclick = (event) => {
+        menuMoveTo.onclick = (event:MouseEvent) => {
             // console.log(event);
             // find the coords !!!
             // !!! need to be relative to zero !!! uuuhhh
-            let pads = pcb.getSelected();
-            if (pads.length > 0) {
-                let pad: Pad = pads[0];
-                console.log(pad);
-                device.moveTo(pad.posX, pad.posY, undefined, undefined);
-            }
+
+            // let pads = pcb.getSelected();
+            // if (pads.length > 0) {
+            //     let pad: Pad = pads[0];
+            //     console.log(pad);
+            //     device.moveTo(pad.posX, pad.posY, undefined, undefined);
+            // }
+
+            let pos = pcb.getSelectedZero(); // lower left of selection
+            device.moveTo(pos[0], pos[1], undefined, undefined);
         }
 
         body.ondrop = (ev) => {
             ev.preventDefault();
             console.log(ev);
-            if (ev.dataTransfer.items) {
+            if (ev.dataTransfer && ev.dataTransfer.items) {
                 // Use DataTransferItemList interface to access the file(s)
                 [...ev.dataTransfer.items].forEach((item, i) => {
                     // If dropped items aren't files, reject them
@@ -110,7 +116,7 @@ function init() {
                         }
                     }
                 });
-            } else {
+            } else if (ev.dataTransfer) {
                 // Use DataTransfer interface to access the file(s)
                 [...ev.dataTransfer.files].forEach((file, i) => {
                     if (file) {

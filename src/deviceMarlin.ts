@@ -16,6 +16,9 @@ export class Marlin extends Device {
     marlinDivStatus: HTMLElement | null;
     marlinDivPosition: HTMLElement | null;
     marlinDivCommands: HTMLElement | null;
+
+    zero:[number,number] = [0,0];
+
     constructor() {
         super();
         this.marlinDiv = document.getElementById("Marlin");
@@ -26,8 +29,9 @@ export class Marlin extends Device {
     /**
      * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
      */
-    public setZero(): void {
-        this.serialWriteWait('G92 X0 Y0 Z0').finally(() => {
+    public setZero(point:[number,number]): void {
+        this.zero = point;
+        this.serialWriteWait('G92 X0 Y0 Z0').then(() => {
             this.onBtnPos();
         });
     }
@@ -36,10 +40,10 @@ export class Marlin extends Device {
      */
     public moveTo(x: number | undefined, y: number | undefined, z: number | undefined, e: number | undefined): void {
         let cmd = 'G0 ';
-        if(x != undefined) cmd += `X${x} `;
-        if(y != undefined) cmd += `Y${y} `;
+        if(x != undefined) cmd += `X${x-this.zero[0]} `;
+        if(y != undefined) cmd += `Y${y-this.zero[1]} `;
         if(z != undefined) cmd += `Z${z} `;
-        this.serialWriteWait(cmd).finally(() => {
+        this.serialWriteWait(cmd).then(() => {
             this.onBtnPos();
         });
     }
