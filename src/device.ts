@@ -14,7 +14,6 @@ export class Device {
     deviceCheck: HTMLButtonElement | null;
     deviceConnect: HTMLButtonElement | null;
     deviceDisconnect: HTMLButtonElement | null;
-    deviceDosome: HTMLButtonElement | null;
     deviceInput: HTMLInputElement | null;
     deviceInputForm: HTMLFormElement | null;
     deviceInfo: HTMLDivElement | null;
@@ -32,7 +31,6 @@ export class Device {
         this.deviceCheck = <HTMLButtonElement | null>document.getElementById("deviceCheck");
         this.deviceConnect = <HTMLButtonElement | null>document.getElementById("deviceConnect");
         this.deviceDisconnect = <HTMLButtonElement | null>document.getElementById("deviceDisconnect");
-        this.deviceDosome = <HTMLButtonElement | null>document.getElementById("deviceDosome");
         this.deviceInput = <HTMLInputElement | null>document.getElementById("deviceInput");
         this.deviceInputForm = <HTMLFormElement | null>document.getElementById("deviceInputForm");
         this.deviceInfo = <HTMLDivElement | null>document.getElementById("deviceInfo");
@@ -51,26 +49,23 @@ export class Device {
         this.serialCheck();
     }
 
+    /**
+     * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
+     */
+    public setZero?(): void
+    /**
+     * Overwrite! Move to position. If one coordinate is undefined, it's ignored
+     */
+    public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void
 
     /**
      * Overwrite this in derived class to get notification when some device was connected.
      */
-    protected onSerialConnected() {
-        console.log('Device: onSerialConnected')
-    }
+    // protected onSerialConnected?():void;
     /**
      * Overwrite this in derived class to get notification when some device was disconnected.
      */
-    protected onSerialDisconnected() {
-        console.log('Device: onSerialDisconnected')
-    }
-
-    public onContextMenu(ev: MouseEvent) {
-        console.log('Device: onContextMenu')
-    }
-    public onMouseUp(ev: MouseEvent) {
-        console.log('Device: onMouseUp')
-    }
+    // protected onSerialDisconnected?():void;
 
     /**
      * Opens a dialog where user can select a device to connect.
@@ -78,7 +73,7 @@ export class Device {
     public async serialConnect() {
         // opens dialog where user can select a device
         navigator.serial.requestPort().then((port) => {
-            console.log('serialConnect',port);
+            console.log('serialConnect', port);
             this.serialPortOpen(port);
         }).catch((reason) => {
             // console.warn('serialConnect',reason);
@@ -219,7 +214,7 @@ export class Device {
                 console.log(`serial available, ports: `, port.getInfo());
                 const { usbProductId, usbVendorId } = port.getInfo();
                 console.log(`updatePorts port pid:${usbProductId} vid:${usbVendorId}`);
-                html += `<div class="w3-container"><i class="fa-solid fa-microchip"></i> pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-light-grey w3-tiny" id="${usbVendorId}-${usbProductId}"><i class="fa fa-plug"></i> connect </button></div>`;
+                html += `<div class="w3-container"><i class="fa-solid fa-microchip"></i> pid:${usbProductId} vid:${usbVendorId} <button class="w3-btn w3-round w3-light-grey w3-tiny" id="${usbVendorId}-${usbProductId}"><i class="fa fa-plug"></i> connect </button></div>`;
             }
             if (this.deviceInfo) {
                 this.deviceInfo.innerHTML = html;
@@ -367,9 +362,9 @@ export class Device {
 
     private serialLog(text: string, incomming: boolean) {
         if (this.deviceSerial) {
-            while(this.deviceSerial.childElementCount > 20) {
+            while (this.deviceSerial.childElementCount > 20) {
                 let ch = this.deviceSerial.firstChild;
-                if(ch) {
+                if (ch) {
                     this.deviceSerial.removeChild(ch);
                 }
             }
