@@ -20,6 +20,9 @@ const progressCancel: HTMLButtonElement | null = <HTMLButtonElement | null>docum
 
 const menuSetZero: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuSetZero");
 const menuMoveTo: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuMoveTo");
+const menuMoveAll: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuMoveAll");
+const menuBlob: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("menuBlob");
+
 
 const main: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("main");
 const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("openSidebar");
@@ -35,7 +38,7 @@ let pcb: PCB;
 let device = new Marlin();
 
 function init() {
-    if (uploadButton && menuSetZero && menuMoveTo && progressCancel && padsField && coordsField && body && canvas && footer) {
+    if (uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -100,6 +103,13 @@ function init() {
 
             let pos = pcb.getSelectedZero(); // lower left of selection
             device.moveTo(pos[0], pos[1], undefined, undefined);
+        }
+        menuMoveAll.onclick = (event:MouseEvent) => {
+            let plist = pcb.getSelected();
+            device.moveToAll(plist);
+        }
+        menuBlob.onclick = () => {
+            device.blob();
         }
 
         body.ondrop = (ev) => {
@@ -320,19 +330,19 @@ globalThis.resize = () => {
             height += elem.clientHeight;
         }
 
-        console.log('resize: debug content height', height);
+        // console.log('resize: debug content height', height);
 
         // so far so good
 
         // if coords is shown, set debug size to max
         // if coords is shown, give it all the rest of the space
-        console.log('resize coords ', coords.className.indexOf('w3-hide'));
+        // console.log('resize coords ', coords.className.indexOf('w3-hide'));
         if(coords.className.indexOf('w3-hide') != -1) {
-            console.log('resize coords is NOT visible');
+            // console.log('resize coords is NOT visible');
             debug.style.height = `${height+16}px`;
             coords.style.height = `${16}px`; // egal ?
         } else {
-            console.log('resize coords is visible');
+            // console.log('resize coords is visible');
             height -= coords.getBoundingClientRect().height; // do not count coords to hight
             debug.style.height = `${dmaxheight}px`;
             coords.style.height = `${dmaxheight - height - 16}px`;

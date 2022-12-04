@@ -2,7 +2,9 @@
  * Marlin: Device specific implementation.
 */
 
+import { kdTree } from "kd-tree-javascript";
 import { Device } from "./device";
+import { PCB, Pad } from "./pcb";
 
 enum Status {
     Undefined = 1,
@@ -17,7 +19,7 @@ export class Marlin extends Device {
     marlinDivPosition: HTMLElement | null;
     marlinDivCommands: HTMLElement | null;
 
-    zero:[number,number] = [0,0];
+    zero: [number, number] = [0, 0];
 
     constructor() {
         super();
@@ -29,22 +31,63 @@ export class Marlin extends Device {
     /**
      * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
      */
-    public setZero(point:[number,number]): void {
+    public setZero(point: [number, number]): void {
         this.zero = point;
-        this.serialWriteWait('G92 X0 Y0 Z0').then(() => {
-            this.onBtnPos();
-        });
+        this.onBtnAbs().then(() => {
+            this.serialWriteWait('G92 X0 Y0 Z0').then(() => {
+                this.onBtnPos();
+            });
+        })
     }
     /**
      * Overwrite! Move to position. If one coordinate is undefined, it's ignored
      */
     public moveTo(x: number | undefined, y: number | undefined, z: number | undefined, e: number | undefined): void {
         let cmd = 'G0 ';
-        if(x != undefined) cmd += `X${x-this.zero[0]} `;
-        if(y != undefined) cmd += `Y${y-this.zero[1]} `;
-        if(z != undefined) cmd += `Z${z} `;
+        if (x != undefined) cmd += `X${x - this.zero[0]} `;
+        if (y != undefined) cmd += `Y${y - this.zero[1]} `;
+        if (z != undefined) cmd += `Z${z} `;
         this.serialWriteWait(cmd).then(() => {
             this.onBtnPos();
+        });
+    }
+
+    public async moveToAll(plist: Pad[]) {
+        console.log('Marlin: moveToAll', plist.length);
+        console.log(plist);
+
+        const tree = new kdTree(plist, PCB.distance, ["posX", "posY"]);
+
+
+        let foundpad = plist[0];
+
+        this.onBtnAbs().then(async () => {
+            for (let i = 0; i < plist.length; i++) {
+                let search = tree.nearest(foundpad, 1);
+
+                foundpad = search[0][0];
+                console.log('Marlin: moveToAll', foundpad);
+
+                let cmd = 'G0 ';
+                cmd += `X${foundpad.posX - this.zero[0]} `;
+                cmd += `Y${foundpad.posY - this.zero[1]} `;
+                await this.serialWriteWait(cmd);
+                tree.remove(foundpad);
+            }
+        });
+    }
+
+    public blob() {
+        this.onBtnAbs().then(() => {
+            this.serialWriteWait('M83').then(() => { // extruder relativ
+                this.serialWriteWait('G0 Z3').then(() => {
+                    this.serialWriteWait('G0 E10').then(() => {
+                        this.serialWriteWait('G0 Z0').then(() => {
+                            this.serialWriteWait('G0 Z3')
+                        })
+                    })
+                })
+            })
         });
     }
 
@@ -143,7 +186,8 @@ export class Marlin extends Device {
     onBtnPos(): Promise<void> {
         return new Promise<void>((resolve) => {
             this.serialWriteWait('M114').then((value) => {
-                console.log(value);
+                // hier kommt eine zeile mit zahlen und eine mit ok
+                console.log('onBtnPos',value);
                 if (this.marlinDivPosition) {
                     this.marlinDivPosition.innerText = value;
                 }

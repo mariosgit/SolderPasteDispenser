@@ -3,6 +3,8 @@
 // bugs:
 //   disconnect - Failed to execute 'close' on 'SerialPort': Cannot cancel a locked stream
 
+import { Pad } from "./pcb";
+
 /**
  * Device: abstracts access to machine.
  * It "simplifies" serial port access. At the moment it only ollows "write and response" style communication.
@@ -57,6 +59,9 @@ export class Device {
      * Overwrite! Move to position. If one coordinate is undefined, it's ignored
      */
     public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void
+    public moveToAll?(plist: Pad[]);
+
+    public blob?();
 
     /**
      * Overwrite this in derived class to get notification when some device was connected.
@@ -139,11 +144,11 @@ export class Device {
                         reject('timeout');
                     }
                 } catch (err) {
-                    console.warn(err);
+                    // console.warn(err);
                     reject('busy');
                 }
             } else {
-                console.warn(this.port);
+                // console.warn(this.port);
                 reject('disconnected');
             }
 

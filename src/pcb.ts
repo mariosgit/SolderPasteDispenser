@@ -119,10 +119,10 @@ export class PCB {
      */
     public getSelected():Pad[] {
         let result:Pad[] = [];
-        if(this.nearest.length > 0) {
-            // console.log(sel[0]);
-            if(this.nearest[0].length > 0) {
-                result.push(this.nearest[0][0]);
+        for(let near of this.nearest) {
+            // console.log(near);
+            if(near.length > 0) {
+                result.push(near[0]);
             }
         }
         return result;
@@ -223,7 +223,7 @@ export class PCB {
             this.bbSelection.update(this.mouseSelectX, this.mouseSelectY);
 
             let pad = new Pad('', this.bbSelection.center()[0], this.bbSelection.center()[1]);
-            console.log(`Pcb:mouseUp cx:${pad.posX} cy:${pad.posY} diagonal:${this.bbSelection.diagonal()}`);
+            // console.log(`Pcb:mouseUp cx:${pad.posX} cy:${pad.posY} diagonal:${this.bbSelection.diagonal()}`);
 
             if(this.tree) {
                 let found:[Pad, number][] = [];
