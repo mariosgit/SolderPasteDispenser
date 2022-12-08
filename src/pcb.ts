@@ -139,6 +139,14 @@ export class PCB extends kdTreeObject {
         return this.bbSelection.zero();
     }
 
+    public getPadCount():number {
+        let result = 0;
+        for(let padset of this.mapPads) {
+            result += padset[1].size;
+        }
+        return result;
+    }
+
     public zoomToFit(size:[number,number]) {
         let psize = this.bbPcb.size();
         let zw = size[0] / psize[0];
@@ -237,7 +245,7 @@ export class PCB extends kdTreeObject {
                     this.nearest = found;
                 } else {
                     dist = (dist/2) * (dist/2); // search require square distance ?
-                    found = this.tree.nearest(pad, 99999, dist);
+                    found = this.tree.nearest(pad, this.getPadCount(), dist); // uuuhhh use pad count !?
                     if(!event.shiftKey) {
                         this.nearest = [];
                     }

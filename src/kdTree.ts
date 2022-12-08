@@ -9,14 +9,44 @@
  * @license MIT License <http://www.opensource.org/licenses/mit-license.php>
  */
 
+/* Issue "The remove method has errors" https://github.com/ubilabs/kd-tree-javascript/issues/25
 
-class kdNode {
-    obj: any;
-    left: kdNode | null;
-    right: kdNode | null;
-    parent: any;
-    dimension: any;
-    constructor(obj, dimension, parent) {
+ After having removed some nodes, they can still be found in the kdTree in some situations.
+
+ Here is an example of the remove method errors:
+
+ https://gist.github.com/santoxi/ba8d283f9a21523fa45d23d8e9c3046e
+
+ as a temporary work-around, I added a fourth argument to "nearest" to pass a predicate to filter the matched nodes, which might be also useful to add:
+
+     this.nearest = function (point, maxNodes, maxDistance, predicate) {
+             predicate = predicate || (x => true);
+ ....
+         linearDistance = metric(linearPoint, node.obj);
+
+         if (node.right === null && node.left === null) {
+           if (predicate(node.obj) && (bestNodes.size() < maxNodes || ownDistance < bestNodes.peek()[1])) {
+             saveNode(node, ownDistance);
+           }
+           return;
+         }
+ ....
+         nearestSearch(bestChild);
+
+         if (predicate(node.obj) && (bestNodes.size() < maxNodes || ownDistance < bestNodes.peek()[1])) {
+           saveNode(node, ownDistance);
+         }
+         */
+
+export class kdTreeObject { }
+
+export class kdNode<T extends kdTreeObject> {
+    obj: T;
+    left: kdNode<T> | null;
+    right: kdNode<T> | null;
+    parent: kdNode<T>;
+    dimension: number;
+    constructor(obj: T, dimension: number, parent) {
         this.obj = obj;
         this.left = null;
         this.right = null;
@@ -25,16 +55,13 @@ class kdNode {
     }
 }
 
-
-export class kdTreeObject { }
-
 export class kdTree<T extends kdTreeObject> {
     private _kdTreeObjectType: typeof kdTreeObject;
 
     points: T[];
     metric: (a: T, b: T) => number;
     dimensions: (keyof T)[];
-    root: kdNode | null;
+    root: kdNode<T> | null;
 
     /**
      * Create a new tree from a list of points, a distance function, and a list of dimensions.
@@ -55,14 +82,12 @@ export class kdTree<T extends kdTreeObject> {
         } else {
             this.root = this.buildTree(points, 0, null);
         }
-
-
     }
 
-    private buildTree(points, depth, parent): kdNode | null {
-        var dim = depth % this.dimensions.length,
-            median,
-            node;
+    private buildTree(points: T[], depth: number, parent: kdNode<T> | null): kdNode<T> | null {
+        var dim = depth % this.dimensions.length;
+        var median;
+        var node: kdNode<T>;
 
         if (points.length === 0) {
             return null;
@@ -71,8 +96,8 @@ export class kdTree<T extends kdTreeObject> {
             return new kdNode(points[0], dim, parent);
         }
 
-        points.sort((a, b) => {
-            return a[this.dimensions[dim]] - b[this.dimensions[dim]];
+        points.sort((a: T, b: T): number => {
+            return <number>a[this.dimensions[dim]] - <number>b[this.dimensions[dim]]; // distance in the dimension
         });
 
         median = Math.floor(points.length / 2);
@@ -105,8 +130,10 @@ export class kdTree<T extends kdTreeObject> {
 
     // Convert to a JSON serializable structure; this just requires removing
     // the `parent` property
-    toJSON(src) {
-        if (!src) src = this.root;
+    toJSON(src: kdNode<T> | null = this.root) {
+        if (src === null) {
+            return null;
+        }
         var dest = new kdNode(src.obj, src.dimension, null);
         if (src.left) dest.left = this.toJSON(src.left);
         if (src.right) dest.right = this.toJSON(src.right);
@@ -126,8 +153,7 @@ export class kdTree<T extends kdTreeObject> {
         }
     }
 
-    insert(point) {
-
+    public insert(point) {
         var insertPosition = this.innerSearch(point, this.root, null),
             newkdNode,
             dimension;
@@ -147,30 +173,37 @@ export class kdTree<T extends kdTreeObject> {
         }
     };
 
-    private nodeSearch(point, node) {
+    private nodeSearch(point: T, node: kdNode<T> | null) {
         if (node === null) {
             return null;
         }
 
         if (node.obj === point) {
             return node;
+        } else {
+            // equality check ??? will it work on floats ??? // not the problem, it does not find a candidate !!! uuuhhh
+            let met = this.metric(node.obj, point);
+            // console.log('kdTree:nodeSearch', met);
         }
 
         var dimension = this.dimensions[node.dimension];
 
-        if (point[dimension] < node.obj[dimension]) {
-            return this.nodeSearch(node.left, node);
+        // uuuhhh looking at the tree I see left <= obj[dim]
+        if (point[dimension] <= node.obj[dimension]) {  // original <
+            // console.log(`kdTree:nodeSearch left ${point[dimension]} <=? ${node.obj[dimension]}`);
+            return this.nodeSearch(point, node.left);
         } else {
-            return this.nodeSearch(node.right, node);
+            // console.log(`kdTree:nodeSearch right ${point[dimension]} >? ${node.obj[dimension]}`);
+            return this.nodeSearch(point, node.right);
         }
     }
 
-    private findMin(node, dim) {
-        var dimension,
-            own,
-            left,
-            right,
-            min;
+    private findMin(node: kdNode<T> | null, dim: number): kdNode<T> | null {
+        var dimension: any;
+        var own: number;
+        var left;
+        var right;
+        var min: kdNode<T>;
 
         if (node === null) {
             return null;
@@ -199,10 +232,48 @@ export class kdTree<T extends kdTreeObject> {
         return min;
     }
 
-    private removeNode(node) {
-        var nextkdNode,
-            nextObj,
-            pDimension;
+    private findMax(node: kdNode<T>, dim: number): kdNode<T> {
+        var dimension: any;
+        var own: number;
+        var left: kdNode<T> | null = null;
+        var right: kdNode<T> | null = null;
+        var max: kdNode<T>;
+
+        dimension = this.dimensions[dim];
+
+        if (node.dimension === dim) {
+            if (node.left !== null) {
+                return this.findMax(node.left, dim);
+            }
+            return node;
+        }
+
+        own = node.obj[dimension];
+        if (node.left) {
+            left = this.findMax(node.left, dim);
+        }
+        if (node.right) {
+            right = this.findMax(node.right, dim);
+        }
+        max = node;
+
+        if (left !== null && left.obj[dimension] > own) {
+            max = left;
+        }
+        if (right !== null && right.obj[dimension] > max.obj[dimension]) {
+            max = right;
+        }
+        return max;
+    }
+
+    private removeNode(node: kdNode<T> | null) {
+        var nextNode: kdNode<T> | null;
+        var nextObj: T;
+        var pDimension: any;
+
+        if (node === null) {
+            return
+        }
 
         if (node.left === null && node.right === null) {
             if (node.parent === null) {
@@ -212,7 +283,7 @@ export class kdTree<T extends kdTreeObject> {
 
             pDimension = this.dimensions[node.parent.dimension];
 
-            if (node.obj[pDimension] < node.parent.obj[pDimension]) {
+            if (node.obj[pDimension] <= node.parent.obj[pDimension]) { //orig <
                 node.parent.left = null;
             } else {
                 node.parent.right = null;
@@ -223,36 +294,38 @@ export class kdTree<T extends kdTreeObject> {
         // If the right subtree is not empty, swap with the minimum element on the
         // node's dimension. If it is empty, we swap the left and right subtrees and
         // do the same.
-        if (node.right !== null) {
-            nextkdNode = this.findMin(node.right, node.dimension);
-            nextObj = nextkdNode.obj;
-            this.removeNode(nextkdNode);
+        if (node.left !== null) { // orig right
+            nextNode = this.findMax(node.left, node.dimension); // orig right, findMin
+            nextObj = nextNode.obj;
+            this.removeNode(nextNode);
             node.obj = nextObj;
-        } else {
-            nextkdNode = this.findMin(node.left, node.dimension);
-            nextObj = nextkdNode.obj;
-            this.removeNode(nextkdNode);
-            node.right = node.left;
-            node.left = null;
+        } else if (node.right !== null) { // makes typescript happy
+            nextNode = this.findMax(node.right, node.dimension); // orig left, findMin
+            nextObj = nextNode.obj;
+            this.removeNode(nextNode);
+            node.left = node.right; // orig right = left
+            node.right = null; //orig left
             node.obj = nextObj;
         }
 
     }
 
-    remove(point) {
-        var node;
+    public remove(point: T): boolean {
+        var node: kdNode<T> | null;
 
+        // console.log('kdTree:remove searching:', point);
         node = this.nodeSearch(point, this.root);
 
         if (node === null) {
-            console.log('kdTree:remove:kackcnshit');
-            return;
+            console.warn("kdTree:remove:kack'n'shit");
+            return false;
         }
 
         this.removeNode(node);
+        return true;
     };
 
-    private nearestSearch(data: { point: T, bestNodes:BinaryHeap, maxNodes: number }, node) {
+    private nearestSearch(data: { point: T, bestNodes: BinaryHeap<T>, maxNodes: number }, node) {
         let bestChild;
         let dimension = this.dimensions[node.dimension];
         let ownDistance = this.metric(data.point, node.obj);
@@ -261,9 +334,9 @@ export class kdTree<T extends kdTreeObject> {
         let otherChild;
         let i;
 
-        console.log(`kdTree:nearestSearch`, data);
+        // console.log(`kdTree:nearestSearch`, data);
 
-        const saveNode = (node: kdNode, distance: number) => {
+        const saveNode = (node: kdNode<T>, distance: number) => {
             data.bestNodes.push([node, distance]);
             if (data.bestNodes.size() > data.maxNodes) {
                 data.bestNodes.pop(); // endless loop here !!!
@@ -320,7 +393,7 @@ export class kdTree<T extends kdTreeObject> {
     nearest(point: T, maxNodes: number, maxDistance?: number) {
         let i;
         let result: any[] = [];
-        let bestNodes: BinaryHeap;
+        let bestNodes: BinaryHeap<T>;
 
         bestNodes = new BinaryHeap(
             (e) => { return -e[1]; }
@@ -348,14 +421,14 @@ export class kdTree<T extends kdTreeObject> {
     };
 
     balanceFactor() {
-        const height = (node: kdNode | null) => {
+        const height = (node: kdNode<T> | null) => {
             if (node === null) {
                 return 0;
             }
             return Math.max(height(node.left), height(node.right)) + 1;
         }
 
-        const count = (node: kdNode | null) => {
+        const count = (node: kdNode<T> | null) => {
             if (node === null) {
                 return 0;
             }
@@ -387,15 +460,15 @@ export class kdTree<T extends kdTreeObject> {
 // Binary heap implementation from:
 // http://eloquentjavascript.net/appendix2.html
 
-export class BinaryHeap {
-    content: [node:kdNode|null, distance:number][];
+export class BinaryHeap<T extends kdTreeObject> {
+    content: [node: kdNode<T> | null, distance: number][];
     scoreFunction: any;
     constructor(scoreFunction) {
         this.content = [];
         this.scoreFunction = scoreFunction;
     }
 
-    push(element:[node:kdNode|null, distance:number]) {
+    push(element: [node: kdNode<T> | null, distance: number]) {
         // Add the new element to the end of the array.
         this.content.push(element);
         // Allow it to bubble up.
@@ -480,7 +553,7 @@ export class BinaryHeap {
             var child1N = child2N - 1;
             // This is used to store the new position of the element,
             // if any.
-            var swap: number|null = null;
+            var swap: number | null = null;
             // If the first child exists (is inside the array)...
             if (child1N < length) {
                 // Look it up and compute its score.

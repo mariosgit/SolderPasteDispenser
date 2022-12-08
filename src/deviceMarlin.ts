@@ -62,14 +62,17 @@ export class Marlin extends Device {
         let search = tree.nearest(startpad, 1);
         let foundpad = search[0][0];
 
+        let foundpads:Pad[] = []; // just for log
+
         this.onBtnAbs().then(async () => {
             try {
                 for (let i = 0; i < plist.length; i++) {
+                    // console.log(JSON.stringify(tree.toJSON(), undefined, 4)); // dump tree
                     search = tree.nearest(foundpad, 1);
-                    console.log('Marlin:moveToAll', search);
+                    // console.log('Marlin:moveToAll', search);
 
                     foundpad = search[0][0];
-                    console.log('Marlin:moveToAll', foundpad);
+                    foundpads.push(foundpad);
 
                     let cmd = 'G0 ';
                     cmd += `X${foundpad.posX - this.zero[0]} `;
@@ -84,6 +87,11 @@ export class Marlin extends Device {
                     /// workaround here...
                     // tree.nearest()
                 }
+
+                for(let foundpad of foundpads) {
+                    console.log('Marlin:moveToAll', foundpad);
+                }
+
             } catch (what) {
                 // if serialWriteWait fails, do something ?
                 console.warn("Marlin:moveToAll: failed", what);
