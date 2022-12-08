@@ -13,7 +13,7 @@
   "scripts": {
     "start": "parcel --target default",
     "build": "npm run clean && parcel build ",
-    "clean": "del-cli \"./docs/*.(js|map|css|ico)\""
+    "clean": "del-cli \"./docs/*.(js|map|css|ico|svg|ttf|woff2|html)\""
   },
   "author": "",
   "license": "ISC",
