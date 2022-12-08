@@ -66,8 +66,12 @@ export class Marlin extends Device {
 
         this.onBtnAbs().then(async () => {
             try {
+                let treeshot = '';
+                // console.log('tree dump:');
+                // console.log(JSON.stringify(tree.toJSON(), undefined, 4)); // dump tree
+
                 for (let i = 0; i < plist.length; i++) {
-                    // console.log(JSON.stringify(tree.toJSON(), undefined, 4)); // dump tree
+
                     search = tree.nearest(foundpad, 1);
                     // console.log('Marlin:moveToAll', search);
 
@@ -83,9 +87,14 @@ export class Marlin extends Device {
                     } catch (what) { } // ignore disconnected for debugging
 
                     /// remove seems to be bugi :(((
-                    tree.remove(foundpad);
-                    /// workaround here...
-                    // tree.nearest()
+                    let ok = tree.remove(foundpad);
+                    if(ok) {
+                        // console.log(`Marlin:moveToAll removed pad`, foundpad);
+                    } else {
+                        console.warn(`Marlin:moveToAll NOT removed pad, thas bad :(`, foundpad);
+                    }
+                    // treeshot = JSON.stringify(tree.toJSON(), undefined, 4); // keep tree for debug !
+                    // console.log(treeshot);
                 }
 
                 for(let foundpad of foundpads) {

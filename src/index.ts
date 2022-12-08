@@ -87,11 +87,17 @@ function init() {
         }
 
         menuSetZero.onclick = (event:MouseEvent) => {
+            if(contextMenu) {
+                contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
+            }
             pcb.setZero();
             device.setZero(pcb.getZero()); // device must substract "zero" from all coords
         }
 
         menuMoveTo.onclick = (event:MouseEvent) => {
+            if(contextMenu) {
+                contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
+            }
             // console.log(event);
             // find the coords !!!
             // !!! need to be relative to zero !!! uuuhhh
@@ -107,11 +113,17 @@ function init() {
             device.moveTo(pos[0], pos[1], undefined, undefined);
         }
         menuMoveAll.onclick = (event:MouseEvent) => {
+            if(contextMenu) {
+                contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
+            }
             let plist = pcb.getSelected();
             let pzero = pcb.getSelectedZero();
             device.moveToAll(plist, pzero);
         }
         menuBlob.onclick = () => {
+            if(contextMenu) {
+                contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
+            }
             device.blob();
         }
 

@@ -101,7 +101,24 @@ export class kdTree<T extends kdTreeObject> {
         });
 
         median = Math.floor(points.length / 2);
+
+        // avoid having same coords on left and right tree !!!
+        while(median > 0) {
+            let newmedian = median - 1;
+            if(points[median][this.dimensions[dim]] === points[newmedian][this.dimensions[dim]]) {
+                // console.warn(`buildTree:split bloed ne ??? ${this.dimensions[dim]}`);
+                median -= 1;
+            } else {
+                break;
+            }
+        }
+
         node = new kdNode(points[median], dim, parent);
+
+        // console.log(`buildTree:split:dim:${this.dimensions[dim]} value:${points[median][this.dimensions[dim]]}`);
+        // console.log(`buildTree:left:${depth}`, points.slice(0, median));
+        // console.log(`buildTree:right${depth}`, points.slice(median + 1));
+
         node.left = this.buildTree(points.slice(0, median), depth + 1, node);
         node.right = this.buildTree(points.slice(median + 1), depth + 1, node);
 
@@ -139,6 +156,23 @@ export class kdTree<T extends kdTreeObject> {
         if (src.right) dest.right = this.toJSON(src.right);
         return dest;
     };
+
+    /** returns a list of points in the subtree, exclusive the given node ! */
+    toArray(src: kdNode<T> | null = this.root): T[] {
+        let result:T[] = [];
+        if (src === null) {
+            return result;
+        }
+        if(src.left) {
+            result.push(src.left.obj);
+            result = [...result, ...this.toArray(src.left)];
+        }
+        if(src.right) {
+            result.push(src.right.obj);
+            result = [...result, ...this.toArray(src.right)];
+        }
+        return result;
+    }
 
     private innerSearch(point, node, parent) {
         if (node === null) {
@@ -188,8 +222,9 @@ export class kdTree<T extends kdTreeObject> {
 
         var dimension = this.dimensions[node.dimension];
 
-        // uuuhhh looking at the tree I see left <= obj[dim]
-        if (point[dimension] <= node.obj[dimension]) {  // original <
+        // uuuhhh looking at the tree I see left <= obj[dim],
+        // no actually the array splitting has nothing to do with this comparision, can be either way !!!
+        if (point[dimension] < node.obj[dimension]) {  // original <
             // console.log(`kdTree:nodeSearch left ${point[dimension]} <=? ${node.obj[dimension]}`);
             return this.nodeSearch(point, node.left);
         } else {
@@ -294,17 +329,17 @@ export class kdTree<T extends kdTreeObject> {
         // If the right subtree is not empty, swap with the minimum element on the
         // node's dimension. If it is empty, we swap the left and right subtrees and
         // do the same.
-        if (node.left !== null) { // orig right
-            nextNode = this.findMax(node.left, node.dimension); // orig right, findMin
+        if (node.right !== null) { // orig right
+            nextNode = this.findMin(node.right, node.dimension); // orig right, findMin
             nextObj = nextNode.obj;
             this.removeNode(nextNode);
             node.obj = nextObj;
-        } else if (node.right !== null) { // makes typescript happy
-            nextNode = this.findMax(node.right, node.dimension); // orig left, findMin
+        } else if (node.left !== null) { // makes typescript happy
+            nextNode = this.findMin(node.left, node.dimension); // orig left, findMin
             nextObj = nextNode.obj;
             this.removeNode(nextNode);
-            node.left = node.right; // orig right = left
-            node.right = null; //orig left
+            node.right = node.left; // orig right = left
+            node.left = null; //orig left
             node.obj = nextObj;
         }
 
@@ -321,11 +356,30 @@ export class kdTree<T extends kdTreeObject> {
             return false;
         }
 
-        this.removeNode(node);
+        // this.removeNode(node); // buggi
+
+        // new tree rebuild
+        const allchilds = this.toArray(node);
+        let newnode = this.buildTree(allchilds, node.dimension, node.parent);
+        // console.log('remove', node)
+        // console.log('remove', allchilds);
+        // console.log('remove', newnode);
+        if(node.parent) {
+            if(node.parent.left === node) {
+                // console.log('remove im left');
+                node.parent.left = newnode;
+            } else if (node.parent.right === node) {
+                // console.log('remove im right');
+                node.parent.right = newnode;
+            }
+        } else {
+            this.root = newnode; /// ???
+        }
+
         return true;
     };
 
-    private nearestSearch(data: { point: T, bestNodes: BinaryHeap<T>, maxNodes: number }, node) {
+    private nearestSearch(data: { point: T, bestNodes: BinaryHeap<T>, maxNodes: number }, node:kdNode<T>) {
         let bestChild;
         let dimension = this.dimensions[node.dimension];
         let ownDistance = this.metric(data.point, node.obj);
