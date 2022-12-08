@@ -1,4 +1,4 @@
-import {kdTree} from 'kd-tree-javascript';
+import {kdTree, kdTreeObject} from './kdTree';
 
 class BoundingBox {
     minx: number = 99999;
@@ -60,7 +60,7 @@ export class Pad {
     }
 }
 
-export class PCB {
+export class PCB extends kdTreeObject {
     ctx: CanvasRenderingContext2D;
     canvas: HTMLCanvasElement;
     mapStyles: Map<string, PadStyle>;
@@ -86,14 +86,18 @@ export class PCB {
     tree: kdTree<Pad>;
     nearest:[Pad, number][] = [];
 
-    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-        this.ctx = ctx;
-        this.canvas = canvas;
+    constructor() {
+        super();
         this.mapStyles = new Map<string, PadStyle>();
         this.mapPads = new Map<string, Set<Pad>>();
         this.bbPcb = new BoundingBox();
         this.bbZero = new BoundingBox();
         this.bbSelection = new BoundingBox();
+    }
+
+    setCanvas(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+        this.ctx = ctx;
+        this.canvas = canvas;
     }
 
     /**
@@ -177,7 +181,7 @@ export class PCB {
                 }
             }
 
-            this.tree = new kdTree(pads, PCB.distance, ["posX", "posY"]);
+            this.tree = new kdTree(PCB, pads, PCB.distance, ["posX", "posY"]);
             console.log('tree bf:', this.tree.balanceFactor());
 
         } catch(err) { console.error(err); }
@@ -194,7 +198,7 @@ export class PCB {
             this.mouseSelectX = mx;
             this.mouseSelectY = my;
             this.mouseSelect = true;
-            console.log(`Pcb:mouseDown: x:${this.mouseStartX} y:${this.mouseStartY}`);
+            // console.log(`Pcb:mouseDown: x:${this.mouseStartX} y:${this.mouseStartY}`);
         }
         if(event.button != 0) { // pan around
             this.mouseStartX = event.clientX * trans.a - this.mouseOffX;
@@ -204,7 +208,7 @@ export class PCB {
     }
     mouseUp(event: MouseEvent) {
         const trans = this.ctx.getTransform();
-        console.log('pcb:mouseUp event:', event);
+        // console.log('pcb:mouseUp event:', event);
         if(event.button != 0) {
             this.mouseFlag = false;
         }
@@ -253,7 +257,7 @@ export class PCB {
                 }
                 this.bbSelection = bbNewSelection;
 
-                console.log(`Pcb:mouseUp found #${found.length}`);
+                console.log(`Pcb:mouseUp selection found #${found.length}`);
             }
         }
     }
@@ -289,7 +293,7 @@ export class PCB {
     }
 
     static distance(a:Pad, b:Pad) {
-        return Math.pow(a.posX - b.posX, 2) +  Math.pow(a.posY - b.posY, 2);
+        return (a.posX - b.posX)*(a.posX - b.posX) +  (a.posY - b.posY)*(a.posY - b.posY);
     }
 
     public draw() {

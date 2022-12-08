@@ -59,7 +59,7 @@ export class Device {
      * Overwrite! Move to position. If one coordinate is undefined, it's ignored
      */
     public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void
-    public moveToAll?(plist: Pad[]);
+    public moveToAll?(plist: Pad[], start:[number,number]);
 
     public blob?();
 
@@ -132,9 +132,8 @@ export class Device {
                         if (maxtime <= 0)
                             break;
                     }
-                    console.log(`serialWriteWait avail:${available} time:${timeout - maxtime}`);
-
-                    console.log(`serialWriteWait check: ${this.inputQueue.length}`);
+                    // console.log(`serialWriteWait avail:${available} time:${timeout - maxtime}`);
+                    // console.log(`serialWriteWait check: ${this.inputQueue.length}`);
                     if (this.inputQueue.length > 0) {
                         const inp = <string>this.inputQueue.pop();
                         // console.log(`serialWriteWait resolve: ${inp}`);

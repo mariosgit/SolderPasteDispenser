@@ -2,7 +2,7 @@
  * Marlin: Device specific implementation.
 */
 
-import { kdTree } from "kd-tree-javascript";
+import { kdTree } from './kdTree';
 import { Device } from "./device";
 import { PCB, Pad } from "./pcb";
 
@@ -52,27 +52,41 @@ export class Marlin extends Device {
         });
     }
 
-    public async moveToAll(plist: Pad[]) {
-        console.log('Marlin: moveToAll', plist.length);
+    public async moveToAll(plist: Pad[], start:[number,number]) {
+        console.log('Marlin:moveToAll', plist.length);
         console.log(plist);
 
-        const tree = new kdTree(plist, PCB.distance, ["posX", "posY"]);
+        const tree = new kdTree(PCB, plist, PCB.distance, ["posX", "posY"]);
 
-
-        let foundpad = plist[0];
+        let startpad = new Pad('', start[0], start[1]);
+        let search = tree.nearest(startpad, 1);
+        let foundpad = search[0][0];
 
         this.onBtnAbs().then(async () => {
-            for (let i = 0; i < plist.length; i++) {
-                let search = tree.nearest(foundpad, 1);
+            try {
+                for (let i = 0; i < plist.length; i++) {
+                    search = tree.nearest(foundpad, 1);
+                    console.log('Marlin:moveToAll', search);
 
-                foundpad = search[0][0];
-                console.log('Marlin: moveToAll', foundpad);
+                    foundpad = search[0][0];
+                    console.log('Marlin:moveToAll', foundpad);
 
-                let cmd = 'G0 ';
-                cmd += `X${foundpad.posX - this.zero[0]} `;
-                cmd += `Y${foundpad.posY - this.zero[1]} `;
-                await this.serialWriteWait(cmd);
-                tree.remove(foundpad);
+                    let cmd = 'G0 ';
+                    cmd += `X${foundpad.posX - this.zero[0]} `;
+                    cmd += `Y${foundpad.posY - this.zero[1]} `;
+                    try {
+                        let response = await this.serialWriteWait(cmd);
+                        // console.log('Marlin:moveToAll', response);
+                    } catch (what) { } // ignore disconnected for debugging
+
+                    /// remove seems to be bugi :(((
+                    tree.remove(foundpad);
+                    /// workaround here...
+                    // tree.nearest()
+                }
+            } catch (what) {
+                // if serialWriteWait fails, do something ?
+                console.warn("Marlin:moveToAll: failed", what);
             }
         });
     }

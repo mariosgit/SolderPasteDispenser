@@ -4,6 +4,8 @@ import { Marlin } from './deviceMarlin';
 import { PCB, Pad, PadStyle } from './pcb';
 import { ParserGerber } from './parserGerber';
 
+// simpler !!! const infoDropDown = document.querySelector<HTMLDivElement>('#infoDropDown');
+
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const messageElem: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("messageElem");
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
@@ -106,7 +108,8 @@ function init() {
         }
         menuMoveAll.onclick = (event:MouseEvent) => {
             let plist = pcb.getSelected();
-            device.moveToAll(plist);
+            let pzero = pcb.getSelectedZero();
+            device.moveToAll(plist, pzero);
         }
         menuBlob.onclick = () => {
             device.blob();
@@ -143,7 +146,8 @@ function init() {
             // Prevent default behavior (Prevent file from being opened)
             ev.preventDefault();
         }
-        body.oncontextmenu = (ev) => {
+
+        canvas.oncontextmenu = (ev) => {
             // console.log('oncontextmenu',ev);
             ev.preventDefault();
             if (contextMenu) {
@@ -152,18 +156,15 @@ function init() {
                 contextMenu.className = contextMenu.className.replace('w3-hide', 'w3-show');
             }
         }
-        body.onmouseup = (ev) => {
+        canvas.onmouseup = (ev) => {
             if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
         }
 
-
-        canvas.width = innerWidth;
-        canvas.height = innerHeight - header.getBoundingClientRect().height - footer.getBoundingClientRect().height - 7;
-
         if (ctx) {
-            pcb = new PCB(ctx, canvas);
+            pcb = new PCB();
+            pcb.setCanvas(ctx, canvas);
 
             mouse = new Mouse(ctx, canvas);
             mouse.track();
@@ -232,7 +233,8 @@ function update() {
 async function processGerberFile(file: File) {
     if (padsField && coordsField && ctx && canvas && progress && progressbar && progressCancel && dropZone) { // makes typescript happy...
 
-        pcb = new PCB(ctx, canvas);
+        pcb = new PCB();
+        pcb.setCanvas(ctx, canvas);
         let parser = new ParserGerber(pcb);
 
         padsField.innerHTML = '';

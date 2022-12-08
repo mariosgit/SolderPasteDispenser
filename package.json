@@ -6,20 +6,19 @@
   "targets": {
     "default": {
       "publicUrl": "./",
-      "distDir": "./docs"
+      "distDir": "./docs",
+      "sourceMap": {"inline": true}
     }
   },
   "scripts": {
-    "start": "npx parcel --target default",
-    "build": "npm run clean && npx parcel build ",
+    "start": "parcel --target default",
+    "build": "npm run clean && parcel build ",
     "clean": "del-cli \"./docs/*.(js|map|css|ico)\""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/kd-tree-javascript": "^1.0.1",
-    "canvas-coords": "0.0.3",
-    "kd-tree-javascript": "^1.0.3"
+    "canvas-coords": "0.0.3"
   },
   "devDependencies": {
     "@types/node": "^18.11.9",
