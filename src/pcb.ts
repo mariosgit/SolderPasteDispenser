@@ -1,4 +1,5 @@
-import {kdTree, kdTreeObject} from './kdTree';
+import {kdTree} from 'kd-tree-javascript'; // node module
+// import {kdTree, kdTreeObject} from './kdTree';
 
 class BoundingBox {
     minx: number = 99999;
@@ -60,7 +61,7 @@ export class Pad {
     }
 }
 
-export class PCB extends kdTreeObject {
+export class PCB { //extends kdTreeObject {
     ctx: CanvasRenderingContext2D;
     canvas: HTMLCanvasElement;
     mapStyles: Map<string, PadStyle>;
@@ -87,7 +88,7 @@ export class PCB extends kdTreeObject {
     nearest:[Pad, number][] = [];
 
     constructor() {
-        super();
+        // super();
         this.mapStyles = new Map<string, PadStyle>();
         this.mapPads = new Map<string, Set<Pad>>();
         this.bbPcb = new BoundingBox();
@@ -189,7 +190,8 @@ export class PCB extends kdTreeObject {
                 }
             }
 
-            this.tree = new kdTree(PCB, pads, PCB.distance, ["posX", "posY"]);
+            this.tree = new kdTree(pads, PCB.distance, ["posX", "posY"]);
+            // this.tree = new kdTree(PCB, pads, PCB.distance, ["posX", "posY"]); // ts version
             console.log('tree bf:', this.tree.balanceFactor());
 
         } catch(err) { console.error(err); }

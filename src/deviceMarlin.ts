@@ -2,7 +2,8 @@
  * Marlin: Device specific implementation.
 */
 
-import { kdTree } from './kdTree';
+import {kdTree} from 'kd-tree-javascript'; // node module
+// import { kdTree } from './kdTree';
 import { Device } from "./device";
 import { PCB, Pad } from "./pcb";
 
@@ -52,11 +53,13 @@ export class Marlin extends Device {
         });
     }
 
+
     public async moveToAll(plist: Pad[], start:[number,number]) {
         console.log('Marlin:moveToAll', plist.length);
-        console.log(plist);
+        // console.log(plist);
 
-        const tree = new kdTree(PCB, plist, PCB.distance, ["posX", "posY"]);
+        const tree = new kdTree(plist, PCB.distance, ["posX", "posY"]);
+        // const tree = new kdTree(PCB, plist, PCB.distance, ["posX", "posY"]);
 
         let startpad = new Pad('', start[0], start[1]);
         let search = tree.nearest(startpad, 1);
@@ -88,17 +91,17 @@ export class Marlin extends Device {
 
                     /// remove seems to be bugi :(((
                     let ok = tree.remove(foundpad);
-                    if(ok) {
-                        // console.log(`Marlin:moveToAll removed pad`, foundpad);
-                    } else {
-                        console.warn(`Marlin:moveToAll NOT removed pad, thas bad :(`, foundpad);
-                    }
+                    // if(ok) {
+                    //     // console.log(`Marlin:moveToAll removed pad`, foundpad);
+                    // } else {
+                    //     console.warn(`Marlin:moveToAll NOT removed pad, thas bad :(`, foundpad);
+                    // }
                     // treeshot = JSON.stringify(tree.toJSON(), undefined, 4); // keep tree for debug !
                     // console.log(treeshot);
                 }
 
-                for(let foundpad of foundpads) {
-                    console.log('Marlin:moveToAll', foundpad);
+                for(let fpad of foundpads) {
+                    console.log(`Marlin:moveToAll pad:${fpad.posX};\t${fpad.posY}`);
                 }
 
             } catch (what) {
