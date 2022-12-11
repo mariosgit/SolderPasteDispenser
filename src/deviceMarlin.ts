@@ -2,7 +2,7 @@
  * Marlin: Device specific implementation.
 */
 
-import {kdTree} from 'kd-tree-javascript'; // node module
+import { kdTree } from 'kd-tree-javascript'; // node module
 // import { kdTree } from './kdTree';
 import { Device } from "./device";
 import { PCB, Pad } from "./pcb";
@@ -54,7 +54,7 @@ export class Marlin extends Device {
     }
 
 
-    public async moveToAll(plist: Pad[], start:[number,number]) {
+    public async moveToAll(plist: Pad[], start: [number, number]) {
         console.log('Marlin:moveToAll', plist.length);
         // console.log(plist);
 
@@ -65,7 +65,7 @@ export class Marlin extends Device {
         let search = tree.nearest(startpad, 1);
         let foundpad = search[0][0];
 
-        let foundpads:Pad[] = []; // just for log
+        let foundpads: Pad[] = []; // just for log
 
         this.onBtnAbs().then(async () => {
             try {
@@ -81,13 +81,15 @@ export class Marlin extends Device {
                     foundpad = search[0][0];
                     foundpads.push(foundpad);
 
-                    let cmd = 'G0 ';
-                    cmd += `X${foundpad.posX - this.zero[0]} `;
-                    cmd += `Y${foundpad.posY - this.zero[1]} `;
-                    try {
-                        let response = await this.serialWriteWait(cmd);
-                        // console.log('Marlin:moveToAll', response);
-                    } catch (what) { } // ignore disconnected for debugging
+                    await this.moveAndBlob(foundpad);
+
+                    // let cmd = 'G0 ';
+                    // cmd += `X${foundpad.posX - this.zero[0]} `;
+                    // cmd += `Y${foundpad.posY - this.zero[1]} `;
+                    // try {
+                    //     let response = await this.serialWriteWait(cmd);
+                    //     // console.log('Marlin:moveToAll', response);
+                    // } catch (what) { } // ignore disconnected for debugging
 
                     /// remove seems to be bugi :(((
                     let ok = tree.remove(foundpad);
@@ -100,7 +102,7 @@ export class Marlin extends Device {
                     // console.log(treeshot);
                 }
 
-                for(let fpad of foundpads) {
+                for (let fpad of foundpads) {
                     console.log(`Marlin:moveToAll pad:${fpad.posX};\t${fpad.posY}`);
                 }
 
@@ -111,6 +113,29 @@ export class Marlin extends Device {
         });
     }
 
+    public async moveAndBlob(foundpad: Pad) {
+        return new Promise<string>(async (resolve, reject) => {
+            let cmd = 'G0 ';
+            cmd += `X${foundpad.posX - this.zero[0]} `;
+            cmd += `Y${foundpad.posY - this.zero[1]} `;
+            try {
+                let response = await this.serialWriteWait(cmd).then(() => {
+                    this.serialWriteWait('M83').then(() => { // extruder relativ
+                        this.serialWriteWait('G0 Z3').then(() => {
+                            this.serialWriteWait('G0 E10').then(() => {
+                                this.serialWriteWait('G0 Z0').then(() => {
+                                    this.serialWriteWait('G0 Z3').then(() => {
+                                        resolve('jo');
+                                    })
+                                })
+                            })
+                        })
+                    })
+                })
+                // console.log('Marlin:moveToAll', response);
+            } catch (what) { } // ignore disconnected for debugging
+        });
+    }
     public blob() {
         this.onBtnAbs().then(() => {
             this.serialWriteWait('M83').then(() => { // extruder relativ
@@ -221,7 +246,7 @@ export class Marlin extends Device {
         return new Promise<void>((resolve) => {
             this.serialWriteWait('M114').then((value) => {
                 // hier kommt eine zeile mit zahlen und eine mit ok
-                console.log('onBtnPos',value);
+                console.log('onBtnPos', value);
                 if (this.marlinDivPosition) {
                     this.marlinDivPosition.innerText = value;
                 }
