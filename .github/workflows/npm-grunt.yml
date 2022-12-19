@@ -36,6 +36,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           printenv RUNNER_TEMP
+          pwd
+          ls -l
           chmod -c -R +rX "$INPUT_PATH" | while read line; do
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
