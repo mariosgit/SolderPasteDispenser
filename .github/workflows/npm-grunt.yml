@@ -35,6 +35,7 @@ jobs:
         shell: sh
         if: runner.os == 'Linux'
         run: |
+          printenv RUNNER_TEMP
           chmod -c -R +rX "$INPUT_PATH" | while read line; do
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
@@ -46,13 +47,13 @@ jobs:
             --exclude=.github \
             .
         env:
-          INPUT_PATH: "_site/"
+          INPUT_PATH: "docs/"
       - name: Upload artifact
         uses: actions/upload-artifact@main
         with:
-          name: ${{ inputs.name }}
+          name: github-pages
           path: ${{ runner.temp }}/artifact.tar
-          retention-days: ${{ inputs.retention-days }}
+          retention-days: 1
 
   # Deploy job
   deploy:
