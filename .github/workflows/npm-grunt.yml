@@ -67,7 +67,7 @@ jobs:
   # Deploy job
   deploy:
     # Add a dependency to the build job
-    needs: artifakt
+    needs: build
 
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
