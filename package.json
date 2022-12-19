@@ -12,7 +12,7 @@
         }
     },
     "scripts": {
-        "start": "parcel --no-cache",
+        "start": "parcel",
         "build": "npm run clean && parcel build --no-optimize",
         "clean": "del-cli \"./docs/*.(js|map|css|ico|svg|ttf|woff2|html)\""
     },
