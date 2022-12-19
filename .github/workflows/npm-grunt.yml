@@ -26,6 +26,10 @@ jobs:
       run: |
         npm install
         npm run build
+        echo "****** ls -l ********"
+        ls -l
+        echo "******  pwd  ********"
+        pwd
 
   artifakt:
     runs-on: ubuntu-latest
