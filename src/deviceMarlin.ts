@@ -122,7 +122,7 @@ export class Marlin extends Device {
                 let response = await this.serialWriteWait(cmd).then(() => {
                     this.serialWriteWait('M83').then(() => { // extruder relativ
                         this.serialWriteWait('G0 Z3').then(() => {
-                            this.serialWriteWait('G0 E10').then(() => {
+                            this.serialWriteWait('G0 E1').then(() => {
                                 this.serialWriteWait('G0 Z0').then(() => {
                                     this.serialWriteWait('G0 Z3').then(() => {
                                         resolve('jo');
