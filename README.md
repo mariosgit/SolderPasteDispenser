@@ -45,6 +45,8 @@ Inspired by ct's https://github.com/MakeMagazinDE/Solder-Paste-Dispenser - uhhaa
 
 Another handy motor driven dispenser https://github.com/koendv/paste_dispenser
 
+We might use this syringe press https://www.thingiverse.com/thing:2797132/files
+
 Marlin G-code reference https://marlinfw.org/meta/gcode/
 
 FontAwesome Icons https://fontawesome.com/search?q=syr&o=r&m=free
