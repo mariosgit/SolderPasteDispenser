@@ -21,6 +21,8 @@ export class Marlin extends Device {
     marlinDivCommands: HTMLElement | null;
 
     zero: [number, number] = [0, 0];
+    padXY: HTMLCanvasElement;
+    padZ: HTMLCanvasElement;
 
     constructor() {
         super();
@@ -316,6 +318,49 @@ export class Marlin extends Device {
         this.serialWriteWait('G0 E-10').then((value) => { this.onBtnPos(); });
     };
 
+    calcXY(event:PointerEvent, canvas: HTMLCanvasElement) {
+        const factor = (event.getModifierState("Shift")) ? 0.05 : 0.5;
+        const rect = canvas.getBoundingClientRect();
+        // calculate the mouse click position
+        const mouseX = (event.clientX - rect.left - rect.width/2) * factor;
+        const mouseY = (event.clientY - rect.top - rect.height/2) * -1 * factor;
+
+        return [mouseX, mouseY];
+    }
+    onPadXYhover(event:PointerEvent) {
+        // console.log("onPadXYhover ", mouseX, mouseY);
+        const pos = this.calcXY(event, this.padXY);
+        if(this.marlinDivPosition) {
+            this.marlinDivPosition.innerHTML = `x:${pos[0].toFixed(2)} y:${pos[1].toFixed(2)} z:---`;
+        }
+    }
+    onPadXYclick(event:PointerEvent) {
+        const pos = this.calcXY(event, this.padXY);
+        console.log("onPadXYclick ", pos[0], pos[1]);
+
+        this.onBtnRel().then(() => {
+            this.moveTo(pos[0], pos[1], undefined, undefined);
+        })
+    }
+
+    onPadZhover(event:PointerEvent) {
+        // console.log("onPadXYhover ", mouseX, mouseY);
+        const pos = this.calcXY(event, this.padZ);
+        if(this.marlinDivPosition) {
+            this.marlinDivPosition.innerHTML = `x:--- y:--- z:${pos[1].toFixed(2)}`;
+        }
+    }
+    onPadZclick(event:PointerEvent) {
+        console.log("onPadZ: ", event);
+
+        const pos = this.calcXY(event, this.padZ);
+        console.log("onPadZclick ", pos[0], pos[1]);
+
+        this.onBtnRel().then(() => {
+            this.moveTo(0, 0, pos[1], undefined);
+        })
+    }
+
     /**
      * Creates some buttons for Marlin specific actions...
      */
@@ -323,29 +368,35 @@ export class Marlin extends Device {
         if (this.marlinDiv) {
             this.marlinDiv.innerHTML = `
             <div class="w3-border w3-border-dark-grey">
-            <div id="marlinStatus"></div>
-            <div id="marlinPosition" class="w3-tiny"></div>
-            <div id="marlinCommands" class="w3-tiny w3-hide">
-            <p>
-            <button id="marlinHome" class="w3-button w3-round w3-light-grey">home</button>
-            <button id="marlinPos"  class="w3-button w3-round w3-light-grey">pos?</button>
-            <button id="marlinRel"  class="w3-button w3-round w3-light-grey">rel</button>
-            <button id="marlinAbs"  class="w3-button w3-round w3-light-grey">abs</button>
-            <button id="marlinCold" class="w3-button w3-round w3-light-grey">cold</button>
-            </p>
-            <p>
-            <button id="marlinXP" class="w3-button w3-round w3-light-grey">x+</button>
-            <button id="marlinXM" class="w3-button w3-round w3-light-grey">x-</button>
-            <button id="marlinYP" class="w3-button w3-round w3-light-grey">y+</button>
-            <button id="marlinYM" class="w3-button w3-round w3-light-grey">y-</button>
-            <button id="marlinZP" class="w3-button w3-round w3-light-grey">z+</button>
-            <button id="marlinZM" class="w3-button w3-round w3-light-grey">z-</button>
-            </p>
-            <p>
-            <button id="marlinEP" class="w3-button w3-round w3-light-grey">e+</button>
-            <button id="marlinEM" class="w3-button w3-round w3-light-grey">e-</button>
-            </p>
-            </div>
+                <div id="marlinStatus"></div>
+                <div id="marlinPosition" class="w3-tiny"></div>
+                <span id="marlinMove" class="w3-show">
+                    <canvas id="marlinMovePadXY" width="200px" height="150px"></canvas>
+                    <canvas id="marlinMovePadZ" width="120px" height="150px"></canvas>
+                </span>
+                <div id="marlinCommands" class="w3-tiny w3-hide">
+                    <p>
+                    <button id="marlinHome" class="w3-button w3-round w3-light-grey">home</button>
+                    <button id="marlinPos"  class="w3-button w3-round w3-light-grey">pos?</button>
+                    <button id="marlinRel"  class="w3-button w3-round w3-light-grey">rel</button>
+                    <button id="marlinAbs"  class="w3-button w3-round w3-light-grey">abs</button>
+                    <button id="marlinCold" class="w3-button w3-round w3-light-grey">cold</button>
+                    </p>
+                    <!--
+                    <p>
+                    <button id="marlinXP" class="w3-button w3-round w3-light-grey">x+</button>
+                    <button id="marlinXM" class="w3-button w3-round w3-light-grey">x-</button>
+                    <button id="marlinYP" class="w3-button w3-round w3-light-grey">y+</button>
+                    <button id="marlinYM" class="w3-button w3-round w3-light-grey">y-</button>
+                    <button id="marlinZP" class="w3-button w3-round w3-light-grey">z+</button>
+                    <button id="marlinZM" class="w3-button w3-round w3-light-grey">z-</button>
+                    </p>
+                    -->
+                    <p>
+                    <button id="marlinEP" class="w3-button w3-round w3-light-grey">e+</button>
+                    <button id="marlinEM" class="w3-button w3-round w3-light-grey">e-</button>
+                    </p>
+                </div>
             </div>
             `
             this.marlinDivStatus = document.getElementById("marlinStatus");
@@ -373,30 +424,30 @@ export class Marlin extends Device {
                 marlinBtnCold.onclick = this.onBtnCold.bind(this);
             }
 
-            const marlinBtnXP = document.getElementById("marlinXP");
-            if (marlinBtnXP) {
-                marlinBtnXP.onclick = this.onBtnXP.bind(this);
-            }
-            const marlinBtnXM = document.getElementById("marlinXM");
-            if (marlinBtnXM) {
-                marlinBtnXM.onclick = this.onBtnXM.bind(this);
-            }
-            const marlinBtnYP = document.getElementById("marlinYP");
-            if (marlinBtnYP) {
-                marlinBtnYP.onclick = this.onBtnYP.bind(this);
-            }
-            const marlinBtnYM = document.getElementById("marlinYM");
-            if (marlinBtnYM) {
-                marlinBtnYM.onclick = this.onBtnYM.bind(this);
-            }
-            const marlinBtnZP = document.getElementById("marlinZP");
-            if (marlinBtnZP) {
-                marlinBtnZP.onclick = this.onBtnZP.bind(this);
-            }
-            const marlinBtnZM = document.getElementById("marlinZM");
-            if (marlinBtnZM) {
-                marlinBtnZM.onclick = this.onBtnZM.bind(this);
-            }
+            // const marlinBtnXP = document.getElementById("marlinXP");
+            // if (marlinBtnXP) {
+            //     marlinBtnXP.onclick = this.onBtnXP.bind(this);
+            // }
+            // const marlinBtnXM = document.getElementById("marlinXM");
+            // if (marlinBtnXM) {
+            //     marlinBtnXM.onclick = this.onBtnXM.bind(this);
+            // }
+            // const marlinBtnYP = document.getElementById("marlinYP");
+            // if (marlinBtnYP) {
+            //     marlinBtnYP.onclick = this.onBtnYP.bind(this);
+            // }
+            // const marlinBtnYM = document.getElementById("marlinYM");
+            // if (marlinBtnYM) {
+            //     marlinBtnYM.onclick = this.onBtnYM.bind(this);
+            // }
+            // const marlinBtnZP = document.getElementById("marlinZP");
+            // if (marlinBtnZP) {
+            //     marlinBtnZP.onclick = this.onBtnZP.bind(this);
+            // }
+            // const marlinBtnZM = document.getElementById("marlinZM");
+            // if (marlinBtnZM) {
+            //     marlinBtnZM.onclick = this.onBtnZM.bind(this);
+            // }
             const marlinBtnEP = document.getElementById("marlinEP");
             if (marlinBtnEP) {
                 marlinBtnEP.onclick = this.onBtnEP.bind(this);
@@ -404,6 +455,47 @@ export class Marlin extends Device {
             const marlinBtnEM = document.getElementById("marlinEM");
             if (marlinBtnEM) {
                 marlinBtnEM.onclick = this.onBtnEM.bind(this);
+            }
+
+            const movePadXY = document.getElementById("marlinMovePadXY") as HTMLCanvasElement;
+            if(movePadXY) {
+                this.padXY = movePadXY;
+                movePadXY.onclick = this.onPadXYclick.bind(this);
+                movePadXY.onmousemove = this.onPadXYhover.bind(this);
+                const ctx = movePadXY.getContext("2d");
+                if(ctx) {
+                    ctx.strokeStyle = "white";
+                    ctx.fillStyle = "white";
+                    ctx.moveTo(0,movePadXY.height/2);
+                    ctx.lineTo(movePadXY.width-1, movePadXY.height/2);
+                    ctx.moveTo(movePadXY.width/2, 0);
+                    ctx.lineTo(movePadXY.width/2, movePadXY.height-1);
+                    ctx.stroke();
+                    ctx.fillText("xy", 0,10);
+                } else {
+                    console.warn("no context on movePadXY");
+                }
+            } else {
+                console.warn("no movePadXY");
+            }
+            const movePadZ = document.getElementById("marlinMovePadZ") as HTMLCanvasElement;
+            if(movePadZ) {
+                this.padZ = movePadZ;
+                movePadZ.onclick = this.onPadZclick.bind(this);
+                movePadZ.onmousemove = this.onPadZhover.bind(this);
+                const ctx = movePadZ.getContext("2d");
+                if(ctx) {
+                    ctx.strokeStyle = "white";
+                    ctx.fillStyle = "white";
+                    ctx.moveTo(0,movePadZ.height/2);
+                    ctx.lineTo(movePadZ.width-1, movePadZ.height/2);
+                    ctx.stroke();
+                    ctx.fillText("z", 0,10);
+                } else {
+                    console.warn("no context on movePadZ");
+                }
+            } else {
+                console.warn("no movePadZ");
             }
         }
     }
