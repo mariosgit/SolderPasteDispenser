@@ -88,7 +88,7 @@ function init() {
         }
 
         testFileButton.onclick = () => {
-            fetch('https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/test/blades_v40-PasteTop.gbr')
+            fetch('https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/tests/blades_v40-PasteTop.gbr')
                 .then(res => res.blob())
                 .then(blob => {
                     var file = new File([blob], "blades_v40-PasteTop.gbr");
