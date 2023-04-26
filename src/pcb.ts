@@ -288,16 +288,24 @@ export class PCB { //extends kdTreeObject {
     }
     mouseWheel(event: WheelEvent) {
         const trans = this.ctx.getTransform();
-        // console.log(event.deltaY);
+        const mx = (event.clientX * trans.a - this.mouseOffX);
+        const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY);
+        // console.log(`mouseWheel pos: x:${mx} y:${my}`);
+        let oldX = mx / this.zoom;
+        let oldY = my / this.zoom;
         if (event.deltaY > 0) {
             this.zoom *= 1.1;
-            // this.mouseOffX *= 0.9;
-            // this.mouseOffY *= 0.9;
         } else {
             this.zoom *= 0.9;
-            // this.mouseOffX *= 1.1;
-            // this.mouseOffY *= 1.1;
         }
+        // korrect the drift around current mouse position...
+        let newX = oldX * this.zoom;
+        let newY = oldY * this.zoom;
+        let offX = (newX - mx);
+        let offY = (newY - my);
+        // console.log(`mouseWheel offset: x:${offX} (${this.mouseOffX}) y:${offY} (${this.mouseOffY})`);
+        this.mouseOffX -= offX;
+        this.mouseOffY -= offY;
     }
     mouseOut(event: MouseEvent) {
     }
