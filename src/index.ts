@@ -9,6 +9,7 @@ import { ParserGerber } from './parserGerber';
 const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElementsByTagName('body')[0];
 const messageElem: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("messageElem");
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
+const testFileButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("testFileButton");
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
 const coords: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("Coords");
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
@@ -32,7 +33,7 @@ const openSidebarButton: HTMLButtonElement | null = <HTMLButtonElement | null>do
 const header = document.getElementsByTagName('header')[0];
 const footer = document.getElementById('footer');
 
-let messageClearTimeout:number|undefined = undefined;
+let messageClearTimeout: number | undefined = undefined;
 let ctx: CanvasRenderingContext2D | null = null;
 let mouse: Mouse, grid: Grid;
 let pcb: PCB;
@@ -40,7 +41,7 @@ let pcb: PCB;
 let device = new Marlin();
 
 function init() {
-    if (uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
+    if (testFileButton && uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -86,16 +87,25 @@ function init() {
             return false;
         }
 
-        menuSetZero.onclick = (event:MouseEvent) => {
-            if(contextMenu) {
+        testFileButton.onclick = () => {
+            fetch('https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/test/blades_v40-PasteTop.gbr')
+                .then(res => res.blob())
+                .then(blob => {
+                    var file = new File([blob], "blades_v40-PasteTop.gbr");
+                    processGerberFile(file);
+                }).catch((reason) => {console.warn(reason)});
+        }
+
+        menuSetZero.onclick = (event: MouseEvent) => {
+            if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
             pcb.setZero();
             device.setZero(pcb.getZero()); // device must substract "zero" from all coords
         }
 
-        menuMoveTo.onclick = (event:MouseEvent) => {
-            if(contextMenu) {
+        menuMoveTo.onclick = (event: MouseEvent) => {
+            if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
             // console.log(event);
@@ -112,8 +122,8 @@ function init() {
             let pos = pcb.getSelectedZero(); // lower left of selection
             device.moveTo(pos[0], pos[1], undefined, undefined);
         }
-        menuMoveAll.onclick = (event:MouseEvent) => {
-            if(contextMenu) {
+        menuMoveAll.onclick = (event: MouseEvent) => {
+            if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
             let plist = pcb.getSelected();
@@ -121,7 +131,7 @@ function init() {
             device.moveToAll(plist, pzero);
         }
         menuBlob.onclick = () => {
-            if(contextMenu) {
+            if (contextMenu) {
                 contextMenu.className = contextMenu.className.replace('w3-show', 'w3-hide');
             }
             device.blob();
@@ -153,7 +163,7 @@ function init() {
             }
         }
         body.ondragover = (ev) => {
-            console.log('File(s) in drop zone');
+            // console.log('File(s) in drop zone');
 
             // Prevent default behavior (Prevent file from being opened)
             ev.preventDefault();
@@ -197,17 +207,17 @@ function init() {
 }
 
 function message(text: string) {
-    if(messageClearTimeout) {
+    if (messageClearTimeout) {
         window.clearTimeout(messageClearTimeout);
     }
-    if(messageElem) {
+    if (messageElem) {
         messageElem.innerHTML = `${text}`;
         messageClearTimeout = window.setTimeout(messageClear, 10000);
     }
 }
 function messageClear() {
     messageClearTimeout = undefined;
-    if(messageElem) {
+    if (messageElem) {
         messageElem.innerHTML = '';
     }
 }
@@ -259,7 +269,7 @@ async function processGerberFile(file: File) {
         progressCancel.onclick = () => {
             parser.cancel();
         }
-        parser.processCB = (value:number) => {
+        parser.processCB = (value: number) => {
             if (progressbar) {
                 progressbar.style.width = `${value}%`;
                 // console.log('progress:', value);
@@ -308,13 +318,13 @@ globalThis.closeSidebar = () => {
 }
 
 globalThis.zoomToFit = () => {
-    if(pcb && canvas) {
+    if (pcb && canvas) {
         pcb.zoomToFit([canvas.width, canvas.height]);
     }
 }
 
 globalThis.rotateRight = () => {
-    if(pcb && canvas) {
+    if (pcb && canvas) {
         // pcb.zoomToFit([canvas.width, canvas.height]);
     }
     message('müsste ma einer implementieren, ne');
@@ -339,7 +349,7 @@ globalThis.resize = () => {
         for (let child of debug.children) {
             let elem: HTMLElement = <HTMLElement>child;
             // console.log(`resize:   ${child.id} ${elem.clientHeight} ${elem.className}`);
-            if(elem.className.indexOf('w3-hide') != -1)
+            if (elem.className.indexOf('w3-hide') != -1)
                 continue;
             height += elem.clientHeight;
         }
@@ -351,9 +361,9 @@ globalThis.resize = () => {
         // if coords is shown, set debug size to max
         // if coords is shown, give it all the rest of the space
         // console.log('resize coords ', coords.className.indexOf('w3-hide'));
-        if(coords.className.indexOf('w3-hide') != -1) {
+        if (coords.className.indexOf('w3-hide') != -1) {
             // console.log('resize coords is NOT visible');
-            debug.style.height = `${height+16}px`;
+            debug.style.height = `${height + 16}px`;
             coords.style.height = `${16}px`; // egal ?
         } else {
             // console.log('resize coords is visible');
