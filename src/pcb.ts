@@ -77,8 +77,6 @@ export class PCB { //extends kdTreeObject {
     mouseSelectX: number;
     mouseSelectY: number;
 
-    posZero: number[];
-
     zoom: number = 5.0;
     bbPcb: BoundingBox;
     bbSelection: BoundingBox;
@@ -268,6 +266,19 @@ export class PCB { //extends kdTreeObject {
                 this.bbSelection = bbNewSelection;
 
                 console.log(`Pcb:mouseUp selection found #${found.length}`);
+
+                let check = found[0][0];
+                let style = this.mapStyles.get(check.style);
+                let zero = this.getZero();
+                if(style) {
+                    console.log(`Pcb:mouseUp selection found pad/style`, check, style);
+                    let info = `pad: x:${(check.posX-zero[0]).toFixed(2)} y:${(check.posY-zero[1]).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
+                    info += `style:${check.style} form:${style.form} w:${style.width.toFixed(2)} h:${style.height.toFixed(2)} <br>`;
+                    info += zero[0]!==99999? `zero: x:${zero[0].toFixed(2)} y:${zero[1].toFixed(2)}`: `no zero set`;
+                    if(globalThis.message) {
+                        globalThis.message(info);
+                    }
+                }
             }
         }
     }

@@ -223,6 +223,7 @@ function messageClear() {
         messageElem.innerHTML = '';
     }
 }
+globalThis.message = message;
 
 function update() {
     if (canvas && ctx) {
@@ -329,7 +330,7 @@ globalThis.rotateRight = () => {
     if (pcb && canvas) {
         // pcb.zoomToFit([canvas.width, canvas.height]);
     }
-    message('müsste ma einer implementieren, ne');
+    globalThis.message('müsste ma einer implementieren, ne');
 }
 
 globalThis.moveSettings = () => {
