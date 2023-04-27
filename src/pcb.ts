@@ -1,4 +1,4 @@
-import {kdTree} from 'kd-tree-javascript'; // node module
+import { kdTree } from 'kd-tree-javascript'; // node module
 // import {kdTree, kdTreeObject} from './kdTree';
 
 class BoundingBox {
@@ -7,7 +7,7 @@ class BoundingBox {
     maxx: number = -99999;
     maxy: number = -99999;
     constructor() { }
-    updateFromPad(pad:Pad) {
+    updateFromPad(pad: Pad) {
         this.update(pad.posX, pad.posY);
     }
     update(x: number, y: number) {
@@ -28,10 +28,10 @@ class BoundingBox {
     }
     diagonal(zoom: number = 1.0): number {
         const size = this.size(zoom);
-        return Math.sqrt(size[0]*size[0] + size[1]*size[1]);
+        return Math.sqrt(size[0] * size[0] + size[1] * size[1]);
     }
     /** Check if pad is inside the boundingbox */
-    inside(pad: Pad):boolean {
+    inside(pad: Pad): boolean {
         return (pad.posX >= this.minx && pad.posX <= this.maxx) && (pad.posY >= this.miny && pad.posY <= this.maxy)
     }
 }
@@ -56,7 +56,7 @@ export class Pad {
         this.posY = y;
         this.style = style;
     }
-    asTuple():[number,number] {
+    asTuple(): [number, number] {
         return [this.posX, this.posY];
     }
 }
@@ -83,7 +83,7 @@ export class PCB { //extends kdTreeObject {
     bbZero: BoundingBox; // use center as zero
 
     tree: kdTree<Pad>;
-    nearest:[Pad, number][] = [];
+    nearest: [Pad, number][] = [];
 
     constructor() {
         // super();
@@ -102,29 +102,31 @@ export class PCB { //extends kdTreeObject {
     /**
      * Sets the Zero position to the lower left of selection rectangle.
      */
-    public setZero():void {
+    public setZero(): void {
         let result = false;
         // use last selection ???
         this.bbZero = this.bbSelection;
         result = true;
         console.log(`Pcb:setZero: ${this.bbZero.zero()}`);
+
+        window.localStorage.setItem('pcb.zero', JSON.stringify(this.getZero()));
     }
 
     /**
      * @returns Zero position relative to Origin(0,0).
      */
-    public getZero():[number,number] {
+    public getZero(): [number, number] {
         return this.bbZero.zero(); // lower left ?? better when .center() ??
     }
 
     /**
      * @returns All Pads in selection.
      */
-    public getSelected():Pad[] {
-        let result:Pad[] = [];
-        for(let near of this.nearest) {
+    public getSelected(): Pad[] {
+        let result: Pad[] = [];
+        for (let near of this.nearest) {
             // console.log(near);
-            if(near.length > 0) {
+            if (near.length > 0) {
                 result.push(near[0]);
             }
         }
@@ -134,23 +136,23 @@ export class PCB { //extends kdTreeObject {
     /**
      * @returns Lower left of selection as tuple
      */
-    public getSelectedZero():[number,number] {
+    public getSelectedZero(): [number, number] {
         return this.bbSelection.zero();
     }
 
-    public getPadCount():number {
+    public getPadCount(): number {
         let result = 0;
-        for(let padset of this.mapPads) {
+        for (let padset of this.mapPads) {
             result += padset[1].size;
         }
         return result;
     }
 
-    public zoomToFit(size:[number,number]) {
+    public zoomToFit(size: [number, number]) {
         let psize = this.bbPcb.size();
         let zw = size[0] / psize[0];
         let zh = size[1] / psize[1];
-        this.zoom = ((zw > zh)? zh : zw) * .9;
+        this.zoom = ((zw > zh) ? zh : zw) * .9;
         console.log(`Pcb:zoomToFit zoom ${this.zoom}`, psize);
         this.center();
     }
@@ -181,7 +183,7 @@ export class PCB { //extends kdTreeObject {
 
     retree() {
         try {
-            let pads : Pad[] = [];
+            let pads: Pad[] = [];
             for (let padsets of this.mapPads.values()) {
                 for (let pad of padsets) {
                     pads.push(pad);
@@ -192,15 +194,87 @@ export class PCB { //extends kdTreeObject {
             // this.tree = new kdTree(PCB, pads, PCB.distance, ["posX", "posY"]); // ts version
             console.log('tree bf:', this.tree.balanceFactor());
 
-        } catch(err) { console.error(err); }
+        } catch (err) { console.error(err); }
+    }
+
+    store() {
+        /*
+        {"styles":{
+            "D10":{"form":"R","width":0.65,"height":0.75},
+            "D11":{"form":"R","width":0.75,"height":0.65},
+            "D12":{"form":"R","width":0.7,"height":0.5},
+            ...
+         "pads":{
+            "D10":[
+                {"posX":125.1298,"posY":-96.1136,"style":"D10"},
+                {"posX":134.8837,"posY":-99.9236,"style":"D10"}
+                ],
+            "D18":[
+                {"posX":142.5448,"posY":-139.6882,"style":"D18"},
+                {"posX":142.5448,"posY":-141.3882,"style":"D18"},
+        */
+        let allPads = {'pads':{}, 'styles':{}};
+        for (let pad of this.mapPads.entries()) {
+            allPads['pads'][pad[0]] = [...pad[1]];
+        }
+        for (let sty of this.mapStyles.entries()) {
+            allPads['styles'][sty[0]] = sty[1];
+        }
+        let jsonAllPads = JSON.stringify(allPads);
+        console.log(`pcb:store: `, jsonAllPads);
+        window.localStorage.setItem('mapPads', jsonAllPads);
+
+        window.localStorage.setItem('pcb.zero', JSON.stringify(this.getZero()));
+    }
+    restore() {
+        console.log('pcb:restore...');
+        const jsonAllPads = window.localStorage.getItem('mapPads');
+        if(jsonAllPads) {
+            try {
+                let allPads = JSON.parse(jsonAllPads);
+                console.log('pcb:restore... 2');
+
+                for(let key of Object.keys(allPads['styles'])) {
+                    const style = allPads['styles'][key];
+                    // console.log(allPads['styles'][sty]); // D10 ...
+                    this.addPadStyle(key, style['form'], style['width'], style['height']);
+                }
+                for(let key of Object.keys(allPads['pads'])) {
+                    const pads = allPads['pads'][key];
+                    for(let pad of pads) {
+                        // console.log(key, pad); // D10 ...
+                        this.addPad(key, pad.posX, pad.posY);
+                    }
+                }
+                this.retree();
+                this.center();
+                this.zoomToFit([this.canvas.width, this.canvas.height]);
+            } catch(ex) {
+                console.warn('pcb:restore EXCEPTION', ex);
+            }
+        } else {
+            console.warn('pcb:restore - no pcb stored');
+            globalThis.message('no pcb stored');
+        }
+
+        const jsonzero = window.localStorage.getItem('pcb.zero');
+        if(jsonzero) {
+            try {
+                const zeror = JSON.parse(jsonzero);
+                console.log('pcb:restore', zeror);
+                this.bbSelection = new BoundingBox();
+                this.bbSelection.update(zeror[0], zeror[1]);
+                this.setZero();
+            } catch(ex) {}
+        }
     }
 
     mouseDown(event: MouseEvent) {
         // console.event.buttons
         const trans = this.ctx.getTransform();
-        if(event.button == 0) { // start select
+        if (event.button == 0) { // start select
             const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
-            const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
+            const my = (this.canvas.height - (event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
             this.mouseStartX = mx;
             this.mouseStartY = my;
             this.mouseSelectX = mx;
@@ -208,7 +282,7 @@ export class PCB { //extends kdTreeObject {
             this.mouseSelect = true;
             // console.log(`Pcb:mouseDown: x:${this.mouseStartX} y:${this.mouseStartY}`);
         }
-        if(event.button != 0) { // pan around
+        if (event.button != 0) { // pan around
             this.mouseStartX = event.clientX * trans.a - this.mouseOffX;
             this.mouseStartY = event.clientY * trans.d - this.mouseOffY;
             this.mouseFlag = true;
@@ -217,15 +291,15 @@ export class PCB { //extends kdTreeObject {
     mouseUp(event: MouseEvent) {
         const trans = this.ctx.getTransform();
         // console.log('pcb:mouseUp event:', event);
-        if(event.button != 0) {
+        if (event.button != 0) {
             this.mouseFlag = false;
         }
-        if(event.button == 0) { // select
+        if (event.button == 0) { // select
             this.mouseSelect = false;
             // console.log(trans, event);
             // console.log('', this.canvas.height-(event.clientY-this.canvas.offsetTop), this.mouseOffY);
             const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
-            const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
+            const my = (this.canvas.height - (event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
             this.mouseSelectX = mx;
             this.mouseSelectY = my;
 
@@ -237,22 +311,22 @@ export class PCB { //extends kdTreeObject {
             let pad = new Pad('', this.bbSelection.center()[0], this.bbSelection.center()[1]);
             // console.log(`Pcb:mouseUp cx:${pad.posX} cy:${pad.posY} diagonal:${this.bbSelection.diagonal()}`);
 
-            if(this.tree) {
-                let found:[Pad, number][] = [];
+            if (this.tree) {
+                let found: [Pad, number][] = [];
                 let dist = this.bbSelection.diagonal();
-                if(dist < 0.1) { // no drag - only one
+                if (dist < 0.1) { // no drag - only one
                     found = this.tree.nearest(pad, 1, dist);
                     this.nearest = found;
                 } else {
-                    dist = (dist/2) * (dist/2); // search require square distance ?
+                    dist = (dist / 2) * (dist / 2); // search require square distance ?
                     found = this.tree.nearest(pad, this.getPadCount(), dist); // uuuhhh use pad count !?
-                    if(!event.shiftKey) {
+                    if (!event.shiftKey) {
                         this.nearest = [];
                     }
-                    for(const near of found) {
+                    for (const near of found) {
                         // console.log(`m:${mx},${my} nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
                         /// uuuhhh check if inside the box
-                        if(this.bbSelection.inside(near[0])) {
+                        if (this.bbSelection.inside(near[0])) {
                             this.nearest.push(near);
                         }
                     }
@@ -260,7 +334,7 @@ export class PCB { //extends kdTreeObject {
 
                 // need a bb for actual selected points to get zero right
                 let bbNewSelection = new BoundingBox();
-                for(const near of this.nearest) {
+                for (const near of this.nearest) {
                     bbNewSelection.updateFromPad(near[0]);
                 }
                 this.bbSelection = bbNewSelection;
@@ -270,12 +344,12 @@ export class PCB { //extends kdTreeObject {
                 let check = found[0][0];
                 let style = this.mapStyles.get(check.style);
                 let zero = this.getZero();
-                if(style) {
+                if (style) {
                     console.log(`Pcb:mouseUp selection found pad/style`, check, style);
-                    let info = `pad: x:${(check.posX-zero[0]).toFixed(2)} y:${(check.posY-zero[1]).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
+                    let info = `pad: x:${(check.posX - zero[0]).toFixed(2)} y:${(check.posY - zero[1]).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
                     info += `style:${check.style} form:${style.form} w:${style.width.toFixed(2)} h:${style.height.toFixed(2)} <br>`;
-                    info += zero[0]!==99999? `zero: x:${zero[0].toFixed(2)} y:${zero[1].toFixed(2)}`: `no zero set`;
-                    if(globalThis.message) {
+                    info += zero[0] !== 99999 ? `zero: x:${zero[0].toFixed(2)} y:${zero[1].toFixed(2)}` : `no zero set`;
+                    if (globalThis.message) {
                         globalThis.message(info);
                     }
                 }
@@ -286,13 +360,13 @@ export class PCB { //extends kdTreeObject {
         // ooohhh do not trust event.button, it's always 0 here !
         // console.log('pcb:mouseMove',event);
         const trans = this.ctx.getTransform();
-        if(this.mouseFlag) {
+        if (this.mouseFlag) {
             this.mouseOffX = event.clientX * trans.a - this.mouseStartX;
             this.mouseOffY = event.clientY * trans.d - this.mouseStartY;
         }
-        if(this.mouseSelect ) {
+        if (this.mouseSelect) {
             const mx = (event.clientX * trans.a - this.mouseOffX) / this.zoom;
-            const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
+            const my = (this.canvas.height - (event.clientY - this.canvas.offsetTop) - this.mouseOffY) / this.zoom;
             this.mouseSelectX = mx;
             this.mouseSelectY = my;
         }
@@ -300,7 +374,7 @@ export class PCB { //extends kdTreeObject {
     mouseWheel(event: WheelEvent) {
         const trans = this.ctx.getTransform();
         const mx = (event.clientX * trans.a - this.mouseOffX);
-        const my = (this.canvas.height-(event.clientY - this.canvas.offsetTop) - this.mouseOffY);
+        const my = (this.canvas.height - (event.clientY - this.canvas.offsetTop) - this.mouseOffY);
         // console.log(`mouseWheel pos: x:${mx} y:${my}`);
         let oldX = mx / this.zoom;
         let oldY = my / this.zoom;
@@ -321,8 +395,8 @@ export class PCB { //extends kdTreeObject {
     mouseOut(event: MouseEvent) {
     }
 
-    static distance(a:Pad, b:Pad) {
-        return (a.posX - b.posX)*(a.posX - b.posX) +  (a.posY - b.posY)*(a.posY - b.posY);
+    static distance(a: Pad, b: Pad) {
+        return (a.posX - b.posX) * (a.posX - b.posX) + (a.posY - b.posY) * (a.posY - b.posY);
     }
 
     public draw() {
@@ -387,25 +461,25 @@ export class PCB { //extends kdTreeObject {
         this.ctx.strokeStyle = 'purple';
         this.ctx.beginPath();
         let csize = .5;
-        for(const near of this.nearest) {
-            this.ctx.moveTo((near[0].posX-csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo((near[0].posX+csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
-            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY+csize) * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY-csize) * this.zoom + this.mouseOffY);
+        for (const near of this.nearest) {
+            this.ctx.moveTo((near[0].posX - csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo((near[0].posX + csize) * this.zoom + this.mouseOffX, near[0].posY * this.zoom + this.mouseOffY);
+            this.ctx.moveTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY + csize) * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(near[0].posX * this.zoom + this.mouseOffX, (near[0].posY - csize) * this.zoom + this.mouseOffY);
             // console.log(`nearest:${near[0].posX},${near[0].posY}  dist:${Math.sqrt(near[1])}`);
         }
         this.ctx.stroke();
 
         // draw selection lower left = zero kandidate
-        let zero = [0,0];
-        if(this.bbSelection) {
+        let zero = [0, 0];
+        if (this.bbSelection) {
             csize = 2 * this.zoom;
             zero = this.bbSelection.zero(this.zoom);
             this.ctx.beginPath();
-            this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
-            this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
-            this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
-            this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+            this.ctx.moveTo(zero[0] - csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.lineTo(zero[0] + csize + this.mouseOffX, zero[1] + this.mouseOffY);
+            this.ctx.moveTo(zero[0] + this.mouseOffX, zero[1] - csize + this.mouseOffY);
+            this.ctx.lineTo(zero[0] + this.mouseOffX, zero[1] + csize + this.mouseOffY);
             this.ctx.stroke();
         }
 
@@ -415,30 +489,30 @@ export class PCB { //extends kdTreeObject {
         this.ctx.beginPath();
         this.ctx.moveTo(-csize + this.mouseOffX, this.mouseOffY);
         this.ctx.lineTo(+csize + this.mouseOffX, this.mouseOffY);
-        this.ctx.moveTo(this.mouseOffX,       -csize + this.mouseOffY);
-        this.ctx.lineTo(this.mouseOffX,       +csize + this.mouseOffY);
+        this.ctx.moveTo(this.mouseOffX, -csize + this.mouseOffY);
+        this.ctx.lineTo(this.mouseOffX, +csize + this.mouseOffY);
         this.ctx.stroke();
 
         // draw zero
         this.ctx.strokeStyle = 'black';
         zero = this.bbZero.zero(this.zoom);
         this.ctx.beginPath();
-        this.ctx.moveTo(zero[0] -csize + this.mouseOffX, zero[1] + this.mouseOffY);
-        this.ctx.lineTo(zero[0] +csize + this.mouseOffX, zero[1] + this.mouseOffY);
-        this.ctx.moveTo(zero[0] + this.mouseOffX,     zero[1]-csize + this.mouseOffY);
-        this.ctx.lineTo(zero[0] + this.mouseOffX,     zero[1]+csize + this.mouseOffY);
+        this.ctx.moveTo(zero[0] - csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.lineTo(zero[0] + csize + this.mouseOffX, zero[1] + this.mouseOffY);
+        this.ctx.moveTo(zero[0] + this.mouseOffX, zero[1] - csize + this.mouseOffY);
+        this.ctx.lineTo(zero[0] + this.mouseOffX, zero[1] + csize + this.mouseOffY);
         this.ctx.stroke();
 
 
         // draw selectionRectangle
-        if(this.mouseSelect) {
+        if (this.mouseSelect) {
             this.ctx.strokeStyle = 'purple';
             this.ctx.beginPath();
-            this.ctx.moveTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
+            this.ctx.moveTo(this.mouseStartX * this.zoom + this.mouseOffX, this.mouseStartY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseStartY * this.zoom + this.mouseOffY);
             this.ctx.lineTo(this.mouseSelectX * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
-            this.ctx.lineTo(this.mouseStartX  * this.zoom + this.mouseOffX, this.mouseStartY  * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseStartX * this.zoom + this.mouseOffX, this.mouseSelectY * this.zoom + this.mouseOffY);
+            this.ctx.lineTo(this.mouseStartX * this.zoom + this.mouseOffX, this.mouseStartY * this.zoom + this.mouseOffY);
             this.ctx.stroke();
         }
     }

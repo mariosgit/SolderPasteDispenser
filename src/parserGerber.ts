@@ -56,6 +56,7 @@ export class ParserGerber extends Parser {
         } // for
 
         this.pcb.retree();
+        this.pcb.store();
     }
 
 

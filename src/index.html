@@ -24,12 +24,23 @@
         </h1>
 
         <div class="">
-            <button class="w3-button w3-round w3-light-grey" id="testFileButton"><i
-                    class="fa-solid fa-flask-vial"></i></button>
-            <button class="w3-button w3-round w3-light-grey" id="uploadButton"><i
-                    class="fa-solid fa-file-arrow-up"></i></button>
-            <span id="dropZone"> <i class="fa-solid fa-arrow-left"></i><i> gerber paste layer file (or drop
-                    anywhere)</i> </span>
+            <span class="w3-tooltip">
+                <button class="w3-button w3-round w3-light-grey" id="localStorageFileButton"><i
+                        class="fa-solid fa-trash-arrow-up"></i></button>
+                <span style="position:absolute;left:0;top:30px" class="w3-text w3-tag w3-theme-light">Load last used PCB</span>
+            </span>
+            <span class="w3-tooltip">
+                <button class="w3-button w3-round w3-light-grey" id="testFileButton"><i
+                        class="fa-solid fa-flask-vial"></i></button>
+                <span style="position:absolute;left:0;top:30px" class="w3-text w3-tag w3-theme-light">Load example.</span>
+            </span>
+            <span class="w3-tooltip">
+                <button class="w3-button w3-round w3-light-grey" id="uploadButton"><i
+                        class="fa-solid fa-file-arrow-up"></i></button>
+                <span id="dropZone"> <i class="fa-solid fa-arrow-left"></i><i> gerber paste layer file (or drop
+                        anywhere)</i> </span>
+                <span style="position:absolute;left:0;top:30px" class="w3-text w3-tag w3-theme-light">Load local file.</span>
+            </span>
         </div>
 
         <button id="openSidebar" class="w3-button w3-round w3-theme w3-xlarge"
@@ -68,23 +79,19 @@
                     <p></p>
 
                     <label><i class="fa-solid fa-syringe"></i> initial extrude/overcome retraction G0 E{x} (10)</label>
-                    <input id="moveSetInitE"
-                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <input id="moveSetInitE" class="w3-input w3-border w3-border-dark-grey " type="number" />
                     <p></p>
 
                     <label><i class="fa-solid fa-syringe"></i> extrude per pad G0 E{x} (1)</label>
-                    <input id="moveSetPadE"
-                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <input id="moveSetPadE" class="w3-input w3-border w3-border-dark-grey " type="number" />
                     <p></p>
 
                     <label><i class="fa-solid fa-syringe"></i> final unextrude/retract G0 E{x} (-10)</label>
-                    <input id="moveSetRetractE"
-                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <input id="moveSetRetractE" class="w3-input w3-border w3-border-dark-grey " type="number" />
                     <p></p>
 
                     <label><i class="fa-solid fa-frog"></i> Z hop - Z clearance while moving (3) mm</label>
-                    <input id="moveSetZHop"
-                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <input id="moveSetZHop" class="w3-input w3-border w3-border-dark-grey " type="number" />
                 </form>
             </div>
             <p></p>

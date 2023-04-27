@@ -10,6 +10,8 @@ const body: HTMLBodyElement | null = <HTMLBodyElement | null>document.getElement
 const messageElem: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("messageElem");
 const uploadButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("uploadButton");
 const testFileButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("testFileButton");
+const localStorageFileButton: HTMLButtonElement | null = <HTMLButtonElement | null>document.getElementById("localStorageFileButton");
+
 const padsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("padsField");
 const coords: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("Coords");
 const coordsField: HTMLDivElement | null = <HTMLDivElement | null>document.getElementById("coordsField");
@@ -43,7 +45,7 @@ let device = new Marlin();
 let movementSettings = new MovementSettings();
 
 function init() {
-    if (testFileButton && uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
+    if (localStorageFileButton && testFileButton && uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
         ctx = canvas.getContext("2d");
 
         canvas.addEventListener("mousemove", (event) => {
@@ -87,6 +89,18 @@ function init() {
                 }
             })
             return false;
+        }
+
+        localStorageFileButton.onclick = () => {
+            // load last used pcb from local storage
+            // globalThis.message('müsste ma einer implementieren, ne');
+
+            if(ctx) {
+                pcb = new PCB();
+                pcb.setCanvas(ctx, canvas);
+    
+                pcb.restore();
+            }
         }
 
         testFileButton.onclick = () => {
