@@ -221,10 +221,10 @@ export class PCB { //extends kdTreeObject {
             allPads['styles'][sty[0]] = sty[1];
         }
         let jsonAllPads = JSON.stringify(allPads);
-        console.log(`pcb:store: `, jsonAllPads);
+        // console.log(`pcb:store: `, jsonAllPads);
         window.localStorage.setItem('mapPads', jsonAllPads);
-
         window.localStorage.setItem('pcb.zero', JSON.stringify(this.getZero()));
+        window.localStorage.setItem('pcb.filename', this.fileName);
     }
     restore() {
         console.log('pcb:restore...');
@@ -267,6 +267,10 @@ export class PCB { //extends kdTreeObject {
                 this.setZero();
             } catch(ex) {}
         }
+
+        const fn = window.localStorage.getItem('pcb.filename');
+        this.fileName = fn?fn:'???';
+
     }
 
     mouseDown(event: MouseEvent) {

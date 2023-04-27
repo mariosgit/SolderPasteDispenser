@@ -95,11 +95,11 @@ function init() {
             // load last used pcb from local storage
             // globalThis.message('müsste ma einer implementieren, ne');
 
-            if(ctx) {
+            if(ctx && dropZone) {
                 pcb = new PCB();
                 pcb.setCanvas(ctx, canvas);
-    
                 pcb.restore();
+                dropZone.innerText = pcb.fileName;
             }
         }
 
@@ -276,6 +276,7 @@ async function processGerberFile(file: File) {
         pcb.setCanvas(ctx, canvas);
         let parser = new ParserGerber(pcb);
 
+        pcb.fileName = file.name;
         padsField.innerHTML = '';
         coordsField.innerHTML = '';
         dropZone.innerText = file.name;
