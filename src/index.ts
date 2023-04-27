@@ -104,10 +104,16 @@ function init() {
         }
 
         testFileButton.onclick = () => {
-            fetch('https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/tests/blades_v40-PasteTop.gbr')
+            const files = [
+                'https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/tests/blades_v40-PasteTop.gbr',
+                'https://raw.githubusercontent.com/mariosgit/SolderPasteDispenser/main/tests/grids_v02-PasteTop.gbr'
+            ];
+            const url = files[Math.floor(Math.random() * files.length)];
+            console.log(Math.floor(Math.random() * files.length));
+            fetch(url)
                 .then(res => res.blob())
                 .then(blob => {
-                    var file = new File([blob], "blades_v40-PasteTop.gbr");
+                    var file = new File([blob], url.substring(url.lastIndexOf('/')+1));
                     processGerberFile(file);
                 }).catch((reason) => {console.warn(reason)});
         }
