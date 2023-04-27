@@ -4,7 +4,7 @@
 
 import { kdTree } from 'kd-tree-javascript'; // node module
 // import { kdTree } from './kdTree';
-import { Device } from "./device";
+import { Device, MovementSettings } from "./device";
 import { PCB, Pad } from "./pcb";
 
 enum Status {
@@ -23,13 +23,18 @@ export class Marlin extends Device {
     zero: [number, number] = [0, 0];
     padXY: HTMLCanvasElement;
     padZ: HTMLCanvasElement;
+    movementSettings: MovementSettings;
 
     constructor() {
         super();
         this.marlinDiv = document.getElementById("Marlin");
+        this.movementSettings = new MovementSettings();
         this.initHtml();
     }
 
+    public applyMoveSettings(movementSettings: MovementSettings) {
+        this.movementSettings = movementSettings;
+    }
 
     /**
      * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
@@ -70,6 +75,8 @@ export class Marlin extends Device {
         let foundpads: Pad[] = []; // just for log
 
         this.onBtnAbs().then(async () => {
+            // initial extrude
+            await this.extrude(this.movementSettings.inite);
             try {
                 let treeshot = '';
                 // console.log('tree dump:');
@@ -112,6 +119,20 @@ export class Marlin extends Device {
                 // if serialWriteWait fails, do something ?
                 console.warn("Marlin:moveToAll: failed", what);
             }
+            // retract
+            await this.extrude(this.movementSettings.retracte);
+        });
+    }
+
+    public async extrude(value: number) {
+        return new Promise<void>((resolve) => {
+            this.serialWriteWait(`G0 E${value}`).then((value) => {
+                console.log(value);
+            }).catch((reason) => {
+                console.warn(reason);
+            }).finally(() => {
+                resolve();
+            });
         });
     }
 
@@ -123,10 +144,10 @@ export class Marlin extends Device {
             try {
                 let response = await this.serialWriteWait(cmd).then(() => {
                     this.serialWriteWait('M83').then(() => { // extruder relativ
-                        this.serialWriteWait('G0 Z3').then(() => {
-                            this.serialWriteWait('G0 E1').then(() => {
+                        this.serialWriteWait(`G0 Z${this.movementSettings.zhop}`).then(() => {
+                            this.serialWriteWait(`G0 E${this.movementSettings.pade}`).then(() => {
                                 this.serialWriteWait('G0 Z0').then(() => {
-                                    this.serialWriteWait('G0 Z3').then(() => {
+                                    this.serialWriteWait(`G0 Z${this.movementSettings.zhop}`).then(() => {
                                         resolve('jo');
                                     })
                                 })
@@ -318,23 +339,23 @@ export class Marlin extends Device {
         this.serialWriteWait('G0 E-10').then((value) => { this.onBtnPos(); });
     };
 
-    calcXY(event:PointerEvent, canvas: HTMLCanvasElement) {
+    calcXY(event: PointerEvent, canvas: HTMLCanvasElement) {
         const factor = (event.getModifierState("Shift")) ? 0.05 : 0.5;
         const rect = canvas.getBoundingClientRect();
         // calculate the mouse click position
-        const mouseX = (event.clientX - rect.left - rect.width/2) * factor;
-        const mouseY = (event.clientY - rect.top - rect.height/2) * -1 * factor;
+        const mouseX = (event.clientX - rect.left - rect.width / 2) * factor;
+        const mouseY = (event.clientY - rect.top - rect.height / 2) * -1 * factor;
 
         return [mouseX, mouseY];
     }
-    onPadXYhover(event:PointerEvent) {
+    onPadXYhover(event: PointerEvent) {
         // console.log("onPadXYhover ", mouseX, mouseY);
         const pos = this.calcXY(event, this.padXY);
-        if(this.marlinDivPosition) {
+        if (this.marlinDivPosition) {
             this.marlinDivPosition.innerHTML = `x:${pos[0].toFixed(2)} y:${pos[1].toFixed(2)} z:---`;
         }
     }
-    onPadXYclick(event:PointerEvent) {
+    onPadXYclick(event: PointerEvent) {
         const pos = this.calcXY(event, this.padXY);
         console.log("onPadXYclick ", pos[0], pos[1]);
 
@@ -343,14 +364,14 @@ export class Marlin extends Device {
         })
     }
 
-    onPadZhover(event:PointerEvent) {
+    onPadZhover(event: PointerEvent) {
         // console.log("onPadXYhover ", mouseX, mouseY);
         const pos = this.calcXY(event, this.padZ);
-        if(this.marlinDivPosition) {
+        if (this.marlinDivPosition) {
             this.marlinDivPosition.innerHTML = `x:--- y:--- z:${pos[1].toFixed(2)}`;
         }
     }
-    onPadZclick(event:PointerEvent) {
+    onPadZclick(event: PointerEvent) {
         console.log("onPadZ: ", event);
 
         const pos = this.calcXY(event, this.padZ);
@@ -458,20 +479,20 @@ export class Marlin extends Device {
             }
 
             const movePadXY = document.getElementById("marlinMovePadXY") as HTMLCanvasElement;
-            if(movePadXY) {
+            if (movePadXY) {
                 this.padXY = movePadXY;
                 movePadXY.onclick = this.onPadXYclick.bind(this);
                 movePadXY.onmousemove = this.onPadXYhover.bind(this);
                 const ctx = movePadXY.getContext("2d");
-                if(ctx) {
+                if (ctx) {
                     ctx.strokeStyle = "white";
                     ctx.fillStyle = "white";
-                    ctx.moveTo(0,movePadXY.height/2);
-                    ctx.lineTo(movePadXY.width-1, movePadXY.height/2);
-                    ctx.moveTo(movePadXY.width/2, 0);
-                    ctx.lineTo(movePadXY.width/2, movePadXY.height-1);
+                    ctx.moveTo(0, movePadXY.height / 2);
+                    ctx.lineTo(movePadXY.width - 1, movePadXY.height / 2);
+                    ctx.moveTo(movePadXY.width / 2, 0);
+                    ctx.lineTo(movePadXY.width / 2, movePadXY.height - 1);
                     ctx.stroke();
-                    ctx.fillText("xy", 0,10);
+                    ctx.fillText("xy", 0, 10);
                 } else {
                     console.warn("no context on movePadXY");
                 }
@@ -479,18 +500,18 @@ export class Marlin extends Device {
                 console.warn("no movePadXY");
             }
             const movePadZ = document.getElementById("marlinMovePadZ") as HTMLCanvasElement;
-            if(movePadZ) {
+            if (movePadZ) {
                 this.padZ = movePadZ;
                 movePadZ.onclick = this.onPadZclick.bind(this);
                 movePadZ.onmousemove = this.onPadZhover.bind(this);
                 const ctx = movePadZ.getContext("2d");
-                if(ctx) {
+                if (ctx) {
                     ctx.strokeStyle = "white";
                     ctx.fillStyle = "white";
-                    ctx.moveTo(0,movePadZ.height/2);
-                    ctx.lineTo(movePadZ.width-1, movePadZ.height/2);
+                    ctx.moveTo(0, movePadZ.height / 2);
+                    ctx.lineTo(movePadZ.width - 1, movePadZ.height / 2);
                     ctx.stroke();
-                    ctx.fillText("z", 0,10);
+                    ctx.fillText("z", 0, 10);
                 } else {
                     console.warn("no context on movePadZ");
                 }

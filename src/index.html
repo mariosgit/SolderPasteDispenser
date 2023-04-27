@@ -20,16 +20,20 @@
     <header class="w3-container w3-theme-dark">
         <h1 class="w3-cursive w3-text-theme-light" style="text-shadow:1px 1px 0 #444">
             <i class="fa-solid fa-syringe"></i>
-             Solder Paste Dispenser
+            Solder Paste Dispenser
         </h1>
 
         <div class="">
-            <button class="w3-button w3-round w3-light-grey" id="testFileButton"><i class="fa-solid fa-flask-vial"></i></button>
-            <button class="w3-button w3-round w3-light-grey" id="uploadButton"><i class="fa-solid fa-file-arrow-up"></i></button>
-            <span id="dropZone"> <i class="fa-solid fa-arrow-left"></i><i> gerber paste layer file (or drop anywhere)</i> </span>
+            <button class="w3-button w3-round w3-light-grey" id="testFileButton"><i
+                    class="fa-solid fa-flask-vial"></i></button>
+            <button class="w3-button w3-round w3-light-grey" id="uploadButton"><i
+                    class="fa-solid fa-file-arrow-up"></i></button>
+            <span id="dropZone"> <i class="fa-solid fa-arrow-left"></i><i> gerber paste layer file (or drop
+                    anywhere)</i> </span>
         </div>
 
-        <button id="openSidebar" class="w3-button w3-round w3-theme w3-xlarge" onclick="globalThis.openSidebar()">&#9776;</button>
+        <button id="openSidebar" class="w3-button w3-round w3-theme w3-xlarge"
+            onclick="globalThis.openSidebar()">&#9776;</button>
 
     </header>
 
@@ -51,30 +55,87 @@
         <button id="menuBlob" class="w3-button w3-block w3-light-grey">z blob</button>
     </div>
 
-    <div id="toolBar" class="w3-bar w3-round w3-center w3-padding-16 w3-theme-dark" >
+    <div id="moveSettingsPanel" class="w3-modal w3-hide">
+        <div id="moveSettingsContent" class="w3-modal-content   w3-theme-dark">
+            <header class="w3-container w3-center w3-theme">
+                <h3>movement settings</h3>
+            </header>
+
+            <div class="w3-container">
+                <form id="deviceInputForm" class="">
+                    <label><i class="fa-solid fa-syringe"></i> extrude rate - M92 E{x}</label>
+                    <input id="moveSetERate" class="w3-input " type="number" />
+                    <p></p>
+
+                    <label><i class="fa-solid fa-syringe"></i> initial extrude/overcome retraction G0 E{x} (10)</label>
+                    <input id="moveSetInitE"
+                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <p></p>
+
+                    <label><i class="fa-solid fa-syringe"></i> extrude per pad G0 E{x} (1)</label>
+                    <input id="moveSetPadE"
+                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <p></p>
+
+                    <label><i class="fa-solid fa-syringe"></i> final unextrude/retract G0 E{x} (-10)</label>
+                    <input id="moveSetRetractE"
+                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                    <p></p>
+
+                    <label><i class="fa-solid fa-frog"></i> Z hop - Z clearance while moving (3) mm</label>
+                    <input id="moveSetZHop"
+                        class="w3-input w3-border w3-border-dark-grey " type="number" />
+                </form>
+            </div>
+            <p></p>
+            <footer class="w3-container w3-center">
+                <button id="menuBlob" onclick="globalThis.applyMoveSettings()"
+                    class="w3-button w3-light-grey">apply</button>
+                <button id="menuBlob" onclick="globalThis.defaultMoveSettings()"
+                    class="w3-button w3-light-grey">defaults</button>
+                <button id="menuBlob" onclick="globalThis.accordionToggler('moveSettingsPanel')"
+                    class="w3-button w3-light-grey">cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div id="toolBar" class="w3-bar w3-round w3-center w3-padding-16 w3-theme-dark">
         Tools
         <div class="w3-tooltip">
-            <button id="zoomToFit" class="w3-button w3-round w3-theme w3-xlarge toolbutton" onclick="globalThis.zoomToFit()"><i class="fa-solid fa-arrows-to-eye"></i></button>
+            <button id="zoomToFit" class="w3-button w3-round w3-theme w3-xlarge toolbutton"
+                onclick="globalThis.zoomToFit()">
+                <i class="fa-solid fa-arrows-to-eye"></i>
+            </button>
             <span style="position:absolute;left:0;bottom:50px" class="w3-text w3-tag w3-theme-light">zoom to fit</span>
         </div>
         <div class="w3-tooltip">
-            <button id="zoomToFit" class="w3-button w3-round w3-theme w3-xlarge toolbutton" onclick="globalThis.rotateRight()"><i class="fa-solid fa-rotate-right"></i></button>
+            <button id="zoomToFit" class="w3-button w3-round w3-theme w3-xlarge toolbutton"
+                onclick="globalThis.rotateRight()">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
             <span style="position:absolute;left:0;bottom:50px" class="w3-text w3-tag w3-theme-light">nop</span>
         </div>
-
-
+        <p></p>
+        <div class="w3-tooltip">
+            <button id="moveSettings" class="w3-button w3-round w3-theme w3-xlarge toolbutton"
+                onclick="globalThis.moveSettings()">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+            <span style="position:absolute;left:0;bottom:50px" class="w3-text w3-tag w3-theme-light">movement
+                settings</span>
+        </div>
     </div>
 
     <div class="w3-sidebar w3-bar-block w3-animate-right w3-grey" id="debug">
         <button class="w3-bar-item w3-button w3-large" onclick="globalThis.closeSidebar()">Close &times;</button>
         <!-- Marlin -->
-        <button onclick="globalThis.accordionToggler('Marlin')"
-            class="w3-button w3-block w3-theme w3-left-align">Marlin <i class="fa fa-caret-down"></i></button>
+        <button onclick="globalThis.accordionToggler('Marlin')" class="w3-button w3-block w3-theme w3-left-align">Marlin
+            <i class="fa fa-caret-down"></i></button>
         <div id="Marlin" class="w3-show">
         </div>
         <!-- Device -->
-        <button onclick="globalThis.accordionToggler('Device')"
-            class="w3-button w3-block w3-theme w3-left-align">Device <i class="fa fa-caret-down"></i></button>
+        <button onclick="globalThis.accordionToggler('Device')" class="w3-button w3-block w3-theme w3-left-align">Device
+            <i class="fa fa-caret-down"></i></button>
         <div id="Device" class="w3-show">
             <div class=" w3-border w3-border-dark-grey">
                 <div class="w3-tiny w3-cursive w3-theme-dark">devices</div>
@@ -87,7 +148,8 @@
                 <button id="deviceDosome" class="w3-button w3-light-grey w3-hide">dosome</button>
                 <form id="deviceInputForm" class="w3-tiny w3-border">
                     <label class="w3-cursive w3-theme-dark">send to serial</label>
-                    <input id="deviceInput" class="w3-input w3-border w3-border-dark-grey w3-light-grey w3-hover-light-grey" type="text">
+                    <input id="deviceInput"
+                        class="w3-input w3-border w3-border-dark-grey w3-light-grey w3-hover-light-grey" type="text">
                 </form>
             </div>
             <div class="w3-tiny w3-border w3-border-dark-grey">
@@ -100,8 +162,8 @@
             </div>
         </div>
         <!-- Log -->
-        <button onclick="globalThis.accordionToggler('Coords')"
-            class="w3-button w3-block w3-theme w3-left-align">Coords <i class="fa fa-caret-down"></i></button>
+        <button onclick="globalThis.accordionToggler('Coords')" class="w3-button w3-block w3-theme w3-left-align">Coords
+            <i class="fa fa-caret-down"></i></button>
         <div id="Coords" class="w3-hide">
             <div class="w3-border w3-border-dark-grey">
                 <h4>Pads</h4>
@@ -115,17 +177,17 @@
     <div class="w3-container w3-theme" id="footer">
         <div class="w3-display-container" style="height:84px;">
             <div class="w3-display-left w3-xlarge">made @
-                <a href="https://makerspace-darmstadt.de/"><img src="../assets/logo_full_left.svg"
-                        alt="makerspace-darmstadt.de" height="32px"></a>
+                <a href="https://makerspace-darmstadt.de/"><img id="msdalogo" src="../assets/logo_full_left.svg"
+                        alt="makerspace-darmstadt.de" height="56px"></a>
             </div>
             <!-- <div id="buttonsElem" class="w3-display-center w3-center">
             </div> -->
             <div id="messageElem" class="w3-display-middle w3-center">
                 ...
             </div>
-            <div class="w3-display-right">
-                <a href="https://github.com/mariosgit/SolderPasteDispenser/wiki/Usage">Help</a><br>
-                <a href="https://github.com/mariosgit/SolderPasteDispenser">Github</a>
+            <div class="w3-display-right w3-right-align">
+                <a target="_blank" href="https://github.com/mariosgit/SolderPasteDispenser/wiki/Usage">help</a><br>
+                <a target="_blank" href="https://github.com/mariosgit/SolderPasteDispenser">github</a>
             </div>
         </div>
     </div>

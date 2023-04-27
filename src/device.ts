@@ -12,6 +12,14 @@ import { Pad } from "./pcb";
  * Function serialWriteWait is used to issue commands and wait for the device to aknowledge.
  */
 
+export class MovementSettings {
+    erate = 50;
+    inite = 10;
+    pade  = 1;
+    retracte = -10;
+    zhop = 3;
+}
+
 export class Device {
     deviceCheck: HTMLButtonElement | null;
     deviceConnect: HTMLButtonElement | null;
@@ -51,11 +59,12 @@ export class Device {
         this.serialCheck();
     }
 
+    public applyMoveSettings?(settings: MovementSettings);
     /**
      * Overwrite! Set the current position to Zero. All further commands will be relative to this position.
      */
     public setZero?(point:[number,number]): void;
-        /**
+    /**
      * Overwrite! Move to position. If one coordinate is undefined, it's ignored
      */
     public moveTo?(x:number|undefined, y:number|undefined, z:number|undefined, e: number | undefined): void

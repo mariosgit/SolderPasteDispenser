@@ -1,5 +1,5 @@
 import { Grid, Mouse } from 'canvas-coords' // https://github.com/CodeDraken/canvas-coords
-import { Device } from './device';
+import { Device, MovementSettings } from './device';
 import { Marlin } from './deviceMarlin';
 import { PCB, Pad, PadStyle } from './pcb';
 import { ParserGerber } from './parserGerber';
@@ -39,6 +39,8 @@ let mouse: Mouse, grid: Grid;
 let pcb: PCB;
 
 let device = new Marlin();
+
+let movementSettings = new MovementSettings();
 
 function init() {
     if (testFileButton && uploadButton && menuSetZero && menuMoveTo && menuMoveAll && menuBlob && progressCancel && padsField && coordsField && body && canvas && footer) {
@@ -328,6 +330,58 @@ globalThis.rotateRight = () => {
         // pcb.zoomToFit([canvas.width, canvas.height]);
     }
     message('müsste ma einer implementieren, ne');
+}
+
+globalThis.moveSettings = () => {
+    // set values !!!
+    const erate = document.getElementById("moveSetERate") as HTMLInputElement;
+    const inite = document.getElementById("moveSetInitE") as HTMLInputElement;
+    const pade  = document.getElementById("moveSetPadE") as HTMLInputElement;
+    const retracte = document.getElementById("moveSetRetractE") as HTMLInputElement;
+    const zhop = document.getElementById("moveSetZHop") as HTMLInputElement;
+
+    erate.value = `${movementSettings.erate}`;
+    inite.value = `${movementSettings.inite}`;
+    pade.value = `${movementSettings.pade}`;
+    retracte.value = `${movementSettings.retracte}`;
+    zhop.value = `${movementSettings.zhop}`;
+    
+    globalThis.accordionToggler('moveSettingsPanel');
+}
+
+globalThis.defaultMoveSettings = () => {
+    movementSettings = new MovementSettings();
+
+    if(device.applyMoveSettings) {
+        device.applyMoveSettings(movementSettings);
+    }
+
+    globalThis.accordionToggler('moveSettingsPanel');
+
+    console.log('applyMoveSettings', movementSettings);
+}
+
+globalThis.applyMoveSettings = () => {
+    // get values !!!
+    const erate = document.getElementById("moveSetERate") as HTMLInputElement;
+    const inite = document.getElementById("moveSetInitE") as HTMLInputElement;
+    const pade  = document.getElementById("moveSetPadE") as HTMLInputElement;
+    const retracte = document.getElementById("moveSetRetractE") as HTMLInputElement;
+    const zhop = document.getElementById("moveSetZHop") as HTMLInputElement;
+    
+    movementSettings.erate    = parseFloat(erate.value);
+    movementSettings.inite    = parseFloat(inite.value);
+    movementSettings.pade     = parseFloat(pade.value);
+    movementSettings.retracte = parseFloat(retracte.value);
+    movementSettings.zhop     = parseFloat(zhop.value);
+
+    if(device.applyMoveSettings) {
+        device.applyMoveSettings(movementSettings);
+    }
+
+    globalThis.accordionToggler('moveSettingsPanel');
+
+    console.log('applyMoveSettings', movementSettings);
 }
 
 globalThis.resize = () => {
