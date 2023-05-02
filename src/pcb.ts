@@ -350,9 +350,16 @@ export class PCB { //extends kdTreeObject {
                 let zero = this.getZero();
                 if (style) {
                     console.log(`Pcb:mouseUp selection found pad/style`, check, style);
-                    let info = `pad: x:${(check.posX - zero[0]).toFixed(2)} y:${(check.posY - zero[1]).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
-                    info += `style:${check.style} form:${style.form} w:${style.width.toFixed(2)} h:${style.height.toFixed(2)} <br>`;
-                    info += zero[0] !== 99999 ? `zero: x:${zero[0].toFixed(2)} y:${zero[1].toFixed(2)}` : `no zero set`;
+                    let info = '';
+                    if (zero[0] === 99999) {
+                        info += `pad: x:${(check.posX).toFixed(2)} y:${(check.posY).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
+                        info += `style:${check.style} form:${style.form} w:${style.width.toFixed(2)} h:${style.height.toFixed(2)} <br>`;
+                        info += `no zero set`;
+                    } else {
+                        info += `pad: x:${(check.posX - zero[0]).toFixed(2)} y:${(check.posY - zero[1]).toFixed(2)} (x:${check.posX.toFixed(2)} y:${check.posY.toFixed(2)}) <br>`
+                        info += `style:${check.style} form:${style.form} w:${style.width.toFixed(2)} h:${style.height.toFixed(2)} <br>`;
+                        info += `zero: x:${zero[0].toFixed(2)} y:${zero[1].toFixed(2)}`;
+                    }
                     if (globalThis.message) {
                         globalThis.message(info);
                     }
